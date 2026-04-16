@@ -1,0 +1,1837 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PASKANESS - Jejak Karya & Arsip</title>
+    <!-- 
+      PANDUAN PENGELOLAAN (ADMIN):
+      --------------------------------------------------
+      1. UNTUK MENGGANTI NAMA ORGANISASI / LOGO:
+         - Cari "const WEBSITE_CONFIG" di bawah.
+         - Ubah 'brandName' untuk nama organisasi.
+         - Ubah 'logoImage' untuk path gambar logo (contoh: '../cover.jpg') ATAU gunakan admin panel.
+         - Ubah 'logoIcon' untuk fallback icon (https://lucide.dev/icons).
+         - ADMIN PANEL: Klik tombol edit logo di hero section (hanya muncul di development).
+      
+      2. UNTUK MENGGANTI TULISAN / KONTEN HALAMAN:
+         - Cari "const WEBSITE_CONTENT" di bawah.
+         - Semua teks di Beranda, Arsip, dan Struktur ada di sana.
+      
+      3. UNTUK MENAMBAH PERIODE BARU:
+         - Cari "const AVAILABLE_PERIODS" di bawah.
+         - Tambahkan tahun baru (misal: '2025-2026') di awal daftar: ['2025-2026', '2024-2025', ...]
+      
+      4. UNTUK MENAMBAH / MENGUBAH ANGGOTA:
+         - Cari "const MEMBERS" di bawah.
+         - Gunakan template ini:
+           {
+               id: 'unik-123',
+               name: 'Nama Lengkap',
+               role: 'Ketua', // Pilih: Ketua, Wakil Ketua, Pemangku Adat, Kerana, Kerani, Litev, Litbang, Tekpram, Pemateri, Juang, atau nama Bidang
+               period: '2024-2025',
+               image: 'https://link-foto.com/foto.jpg',
+               quote: 'Kata mutiara (khusus Ketua)'
+           },
+      
+      5. UNTUK MENGUBAH LINK DOKUMENTASI KEGIATAN:
+         - Cari "const ACTIVITIES" atau "const PAST_COLLECTIONS" di bawah.
+         - Setiap kegiatan memiliki komentar "// ARAHAN: Untuk mengubah link Foto Dokumentasi kegiatan ini, ganti URL di bawah ini"
+         - Ganti link pada item 'Foto Dokumentasi' untuk mengubah tujuan tombol.
+      
+      --------------------------------------------------
+    -->
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & Babel CDN -->
+    <script crossorigin src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/@babel/standalone@7.22.5/babel.min.js"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        background: '#0a0e1a',
+                        'on-background': '#e0e8f0',
+                        surface: '#0f1524',
+                        'on-surface': '#e0e8f0',
+                        'on-surface-variant': '#a0b4c4',
+                        primary: '#7dd3fc',
+                        'on-primary': '#001f2e',
+                        'primary-container': '#0e4d6e',
+                        'on-primary-container': '#c8eaff',
+                        tertiary: '#c8a0f0',
+                        'tertiary-container': '#3d2060',
+                        'outline-variant': '#2a3a48',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        @layer utilities {
+            .glass-panel {
+                background: rgba(15, 21, 36, 0.6);
+                backdrop-filter: blur(16px);
+                border: 1px solid rgba(125, 211, 252, 0.1);
+            }
+            
+            .glass-panel-elevated {
+                background: rgba(15, 21, 36, 0.75);
+                backdrop-filter: blur(24px);
+                border: 1px solid rgba(125, 211, 252, 0.15);
+            }
+
+            .text-gradient {
+                background: linear-gradient(135deg, #7dd3fc 0%, #c8a0f0 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+            }
+
+            .logo-frame {
+                width: min(90vw, 400px);
+                max-width: 400px;
+                aspect-ratio: 1 / 1;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                padding: 0.75rem;
+                background: rgba(15, 21, 36, 0.65);
+                border: 1px solid rgba(125, 211, 252, 0.08);
+                border-radius: 2rem;
+            }
+
+            .logo-image {
+                width: 100%;
+                height: 100%;
+                max-width: 400px;
+                max-height: 400px;
+                object-fit: contain;
+                border-radius: 1.5rem;
+            }
+
+            .logo-icon-fallback {
+                width: min(220px, 100%);
+                height: min(220px, 100%);
+            }
+        }
+
+        body {
+            background-color: #0a0e1a;
+            color: #e0e8f0;
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0a0e1a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #334155;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;  
+            overflow: hidden;
+        }
+        .line-clamp-3 {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;  
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+const { useState, useEffect, useMemo } = React;
+
+        // Image URL helper - supports local paths and Google Drive file IDs
+        const DRIVE_IMAGE_URL_BASE = 'https://drive.google.com/uc?id=';
+        const DRIVE_IMAGE_MAP = {
+            // Replace each placeholder with the actual Google Drive file ID for that image.
+            // Example: 'img/logo/paskaness.png': '1a2b3c4d5e6f7g8h9i0j',
+        };
+
+        const getDriveUrlFromLink = (url) => {
+            if (!url || typeof url !== 'string') return '';
+            const match = url.match(/(?:drive\.google\.com\/file\/d\/|drive\.google\.com\/open\?id=|drive\.google\.com\/uc\?id=)([a-zA-Z0-9_-]+)/);
+            if (match && match[1]) {
+                return `${DRIVE_IMAGE_URL_BASE}${match[1]}`;
+            }
+            return url;
+        };
+
+        const getImageUrl = (data) => {
+            if (!data) return '';
+            if (typeof data === 'object') {
+                if (data.imageUrl) return getDriveUrlFromLink(data.imageUrl);
+                if (data.image) return data.image;
+            }
+            if (typeof data === 'string') {
+                return data.startsWith('http') ? getDriveUrlFromLink(data) : data;
+            }
+            return '';
+        };
+
+        const normalizeImageSources = () => {
+            const normalize = (item) => {
+                if (!item || typeof item !== 'object') return;
+                if (item.image) item.image = getImageUrl(item.image);
+                if (item.logoImage) item.logoImage = getImageUrl(item.logoImage);
+                if (item.documentation && Array.isArray(item.documentation)) {
+                    item.documentation.forEach((doc) => {
+                        if (doc.image) doc.image = getImageUrl(doc.image);
+                    });
+                }
+            };
+
+            [WEBSITE_CONFIG].forEach(normalize);
+            [MEMBERS, ACTIVITIES, PAST_COLLECTIONS].forEach((collection) => {
+                if (Array.isArray(collection)) {
+                    collection.forEach(normalize);
+                }
+            });
+        };
+
+        // Usage: getImageUrl('img/logo/paskaness.png') or getImageUrl('https://drive.google.com/uc?id=FILE_ID')
+        // If you want Drive images, add entries to DRIVE_IMAGE_MAP; otherwise local images still work.
+
+        // ============================================================
+        // 1. KONFIGURASI UTAMA
+        // ============================================================
+        const WEBSITE_CONFIG = {
+            brandName: 'PASKANESS',
+            logoImage: 'img/logo/paskaness.png',
+            imageUrl: '',  // Isi dengan link Drive: https://drive.google.com/uc?id=FILE_ID_DI_SINI
+            footerText: '© 2025 PASKANESS. Seluruh hak cipta dilindungi.',
+        };  //https://drive.google.com/file/d/1JF3w9zYa2UKmls9MEBSi525fgMlPcf6q/view?usp=drive_link
+
+        const WEBSITE_CONTENT = {
+            home: {
+                heroTitle: 'Jejak Karya dalam',
+                heroSubtitle: `Dokumentasi perjalanan PASKANESS dalam membangun masa depan 
+                    yang berkelanjutan melalui kolaborasi komunitas dan pemberdayaan pemuda.`,
+                visionTitle: 'Visi PASKANESS',
+                visionText: `Menjadi pusat keunggulan yang mampu menginspirasi perubahan positif 
+                    dan melahirkan pemimpin masa depan yang berintegritas tinggi.`,
+                missionTitle: 'Misi Utama',
+                missionText: `Mengembangkan potensi anggota melalui pelatihan intensif 
+                    dan jejaring profesional yang berkelanjutan.`,
+                highlightTitle: 'Sorotan Kegiatan',
+                highlightSubtitle: 'Mengenang momen inovasi dan aksi nyata yang telah kita lalui bersama.',
+            },
+            archive: {
+                title: 'Arsip Kegiatan',
+                subtitle: `Menjelajahi rekam jejak perjalanan dan kontribusi kami melalui 
+                    arsip dokumentasi kegiatan yang telah terlaksana.`,
+                recentTitle: 'Dokumentasi Terkini',
+                pastTitle: 'Koleksi Masa Lalu',
+            },
+            structure: {
+                title: 'Struktur Pengurus',
+                subtitle: `Dedikasi dan visi kolektif untuk memajukan PASKANESS melalui 
+                    kepemimpinan yang progresif di setiap masa jabatan.`,
+                noData: 'Data pengurus untuk periode ini belum tersedia.',
+                categories: {
+                    pimpinan: 'Pimpinan Utama',
+                    pemangkuAdat: 'Pemangku Adat',
+                    sekretariat: 'Kerana & Kerani',
+                    litev: 'Litev',
+                    litbang: 'Litbang',
+                    tekpram: 'Tekpram',
+                    pemateri: 'Pemateri',
+                    juang: 'Juang',
+                    
+                }
+            }
+        };
+
+        const AVAILABLE_PERIODS = ['2025-2026', '2026-2027', '2027-2028', '2028-2029'];
+
+        const MEMBERS = [
+            // Periode 2025-2026
+            { 
+                id: 'p25-1', 
+                name: 'M.Tamamum Niam', 
+                role: 'Ketua', 
+                period: '2025-2026', 
+                quote: 'Siap memimpin PASKANESS menuju masa depan yang lebih gemilang.', 
+                image: 'img/2026/ketua&wakil/Ketua.JPG',
+               
+            },
+            { 
+                id: 'p25-2', 
+                name: 'Revi Anindita Ramadhani', 
+                role: 'Wakil Ketua', 
+                period: '2025-2026', 
+                image: 'img/2026/ketua&wakil/wakil.JPG',
+              
+            },
+            //pemangku Adat
+            { 
+                id: 'p24-3', 
+                name: 'M. Alansyah Mahardika', 
+                role: 'Pemangku Adat 1', 
+                period: '2025-2026', 
+                image: 'img/2026/Pemangku Adat/putik.JPG' 
+            },
+            { 
+                id: 'p24-3', 
+                name: 'Keyko Abinaya', 
+                role: 'Pemangku Adat 1', 
+                period: '2025-2026', 
+                image: 'img/2026/Pemangku Adat/keyko.png' 
+            },
+            { 
+                id: 'p24-3', 
+                name: 'M. Kelvan Nurdianto', 
+                role: 'Pemangku Adat 2', 
+                period: '2025-2026', 
+                image: 'img/2026/Pemangku Adat/kelvan.JPG' 
+            },
+            { 
+                id: 'p24-3', 
+                name: 'Adelia Nur Wulan Ramadany', 
+                role: 'Pemangku Adat 2', 
+                period: '2025-2026', 
+                image: 'img/2026/Pemangku Adat/Adel.JPG' 
+            },
+            { 
+                id: 'p24-3', 
+                name: 'Afreza Ridho Ferdian', 
+                role: 'Pemangku Adat 3', 
+                period: '2025-2026', 
+                image: 'img/2026/Pemangku Adat/om.JPG' 
+            },
+            { 
+                id: 'p24-3', 
+                name: 'Putri Rahayu', 
+                role: 'Pemangku Adat 3', 
+                period: '2025-2026', 
+                image: 'img/2026/Pemangku Adat/ketek.JPG' 
+            },
+            //kerana dan kerani
+            { 
+                id: 'p25-4', 
+                name: 'M. Alfan Candra', 
+                role: 'Kerana (CO)', 
+                period: '2025-2026', 
+                image: 'img/2026/kerana&kerani/alfan.JPG' 
+            },
+            { 
+                id: 'p25-5', 
+                name: 'Patis Augusta', 
+                role: 'Kerani (Wakil)', 
+                period: '2025-2026', 
+                image: 'img/2026/kerana&kerani/tata.JPG' 
+            },
+            { 
+                id: 'p25-4', 
+                name: 'Ihsani Habibullah', 
+                role: 'Kerana', 
+                period: '2025-2026', 
+                image: 'img/2026/kerana&kerani/ihsan.JPG' 
+            },
+            { 
+                id: 'p25-5', 
+                name: 'Qurin in Sukandi', 
+                role: 'Kerani', 
+                period: '2025-2026', 
+                image: 'img/2026/kerana&kerani/ayin.png' 
+            },
+            { 
+                id: 'p25-4', 
+                name: 'Muhammad Hertanto Putra', 
+                role: 'Kerana', 
+                period: '2025-2026', 
+                image: 'img/2026/kerana&kerani/putra.JPG' 
+            },
+            { 
+                id: 'p25-5', 
+                name: 'Nadhif haniya madani', 
+                role: 'Kerani', 
+                period: '2025-2026', 
+                image: 'img/2026/kerana&kerani/haniya.JPG' 
+            },
+            { 
+                id: 'p25-5', 
+                name: 'Naila Cameela', 
+                role: 'Kerani', 
+                period: '2025-2026', 
+                image: 'img/2026/kerana&kerani/nela.JPG' 
+            },
+
+            //juang
+            { 
+                id: 'p25-6', 
+                name: 'Nasya Fahima Atifa', 
+                role: 'Juang (CO)', 
+                period: '2025-2026', 
+                image: 'img/2026/juang/nasya.png' 
+            },
+            { 
+                id: 'p25-6', 
+                name: 'Afrinda Sagita Kirana P', 
+                role: 'Juang (Wakil)', 
+                period: '2025-2026', 
+                image: 'img/2026/juang/afrin.JPG' 
+            },
+            { 
+                id: 'p25-6', 
+                name: 'Bimo Cahyo Saputro', 
+                role: 'Juang', 
+                period: '2025-2026', 
+                image: 'img/2026/juang/bimo.JPG'
+            },
+            { 
+                id: 'p25-6', 
+                name: 'Siti Istianatul Mutafika', 
+                role: 'Juang', 
+                period: '2025-2026', 
+                image: 'img/2026/juang/fika.JPG'
+            },
+            { 
+                id: 'p25-6', 
+                name: 'Galeh Candra Adi Nugraha', 
+                role: 'Juang', 
+                period: '2025-2026', 
+                image: 'img/2026/juang/galeh.png'
+            },
+            { 
+                id: 'p25-6', 
+                name: 'Adinda Hanna Farinsia', 
+                role: 'Juang', 
+                period: '2025-2026', 
+                image: 'img/2026/juang/adinda.JPG'
+            },
+
+            //Litev
+            { 
+                id: 'p24-7', 
+                name: 'Rizky Aditya', 
+                role: 'Litev (CO)', 
+                period: '2025-2026', 
+                image: 'img/2026/litev/kiki.jpg'    
+            },
+            { 
+                id: 'p24-7',  
+                name: 'Firnanda Ayu Sekar Arum', 
+                role: 'Litev (Wakil)', 
+                period: '2025-2026', 
+                image: 'img/2026/litev/nanda.jpg' 
+            },
+            { 
+                id: 'p24-7', 
+                name: 'Rafa Arya Widana', 
+                role: 'Litev', 
+                period: '2025-2026', 
+                image: 'img/2026/litev/rafa.jpg' 
+            },
+            { 
+                id: 'p24-7', 
+                name: 'Aulia Silfi Nurhaliza', 
+                role: 'Litev', 
+                period: '2025-2026', 
+                image: 'img/2026/litev/aulia.jpg' 
+            },
+            { 
+                id: 'p24-7', 
+                name: 'M. Fahrezy Taufiqurrahman', 
+                role: 'Litev', 
+                period: '2025-2026', 
+                image: 'img/2026/litev/fahrezy.jpg' 
+            },
+            { 
+                id: 'p24-7', 
+                name: 'Alifa Annafiuz Zahra', 
+                role: 'Litev', 
+                period: '2025-2026', 
+                image: 'img/2026/litev/alifa.jpg' 
+            },
+            { 
+                id: 'p24-7', 
+                name: 'M. Zaki Pradhanatta', 
+                role: 'Litev', 
+                period: '2025-2026', 
+                image: 'img/2026/litev/zaki.jpg' 
+            },
+            { 
+                id: 'p24-7', 
+                name: 'Anggun Dwi Wijaya', 
+                role: 'Litev', 
+                period: '2025-2026', 
+                image: 'img/2026/litev/anggun.jpg' 
+            },
+            { 
+                id: 'p24-7', 
+                name: 'Alif Adwa Ahza V.A', 
+                role: 'Litev', 
+                period: '2025-2026', 
+                image: 'img/2026/litev/ahza.jpg' 
+            },
+            { 
+                id: 'p24-7', 
+                name: 'Nurul Hidayah Ayni', 
+                role: 'Litev', 
+                period: '2025-2026', 
+                image: 'img/2026/litev/ayni.jpg' 
+            },
+            { 
+                id: 'p24-7', 
+                name: 'Najma Keyla Putri Jasmecha', 
+                role: 'Litev', 
+                period: '2025-2026', 
+                image: 'img/2026/litev/keyla.jpg' 
+            },
+            { 
+                id: 'p24-7', 
+                name: 'Aira Nafa Agustina', 
+                role: 'Litev', 
+                period: '2025-2026', 
+                image: 'img/2026/litev/nafa.jpg' 
+            },
+            { 
+                id: 'p24-7', 
+                name: 'Nayla Cahya Herfynda ', 
+                role: 'Litev', 
+                period: '2025-2026', 
+                image: 'img/2026/litev/nayla.jpg' 
+            },
+            { 
+                id: 'p24-7', 
+                name: 'Nikita Khoirun Nisa', 
+                role: 'Litev', 
+                period: '2025-2026', 
+                image: 'img/2026/litev/nikita.jpg' 
+            },
+            { 
+                id: 'p24-7', 
+                name: 'Mustika Sari', 
+                role: 'Litev', 
+                period: '2025-2026', 
+                image: 'img/2026/litev/mustika.jpg' 
+            },
+            { 
+                id: 'p24-7', 
+                name: 'Widya Aulia Putri', 
+                role: 'Litev', 
+                period: '2025-2026', 
+                image: 'img/2026/litev/widya.jpg' 
+            },
+            
+            //litbang
+            { 
+                id: 'p24-8', 
+                name: 'Eka Putri Ramadhani', 
+                role: 'Litbang (CO)', 
+                period: '2025-2026', 
+                image: 'img/2026/litbang/eka.jpg'
+            },
+            { 
+                id: 'p24-8', 
+                name: 'Rizki Dwi Karina', 
+                role: 'Litbang (Wakil)', 
+                period: '2025-2026', 
+                image: 'img/2026/litbang/rizki.jpg' 
+            },
+            { 
+                id: 'p24-8', 
+                name: 'Anita Nur Laili Agustin', 
+                role: 'Litbang', 
+                period: '2025-2026', 
+                image: 'img/2026/litbang/anita.jpg' 
+            },
+            { 
+                id: 'p24-8', 
+                name: 'Sofia putri Winaya', 
+                role: 'Litbang', 
+                period: '2025-2026', 
+                image: 'img/2026/litbang/sofia.jpg' 
+            },
+            { 
+                id: 'p24-8', 
+                name: 'Niken Widyaningtya', 
+                role: 'Litbang', 
+                period: '2025-2026', 
+                image: 'img/2026/litbang/niken.jpg' 
+            },
+            { 
+                id: 'p24-8', 
+                name: 'Devfi Isabella Dewantari', 
+                role: 'Litbang', 
+                period: '2025-2026', 
+                image: 'img/2026/litbang/devfi.jpg' 
+            },
+            { 
+                id: 'p24-8', 
+                name: 'Naishila Nasya Murtafiah', 
+                role: 'Litbang', 
+                period: '2025-2026', 
+                image: 'img/2026/litbang/naishila.jpg' 
+            },
+            { 
+                id: 'p24-8', 
+                name: 'Alfina Nurun Najwa', 
+                role: 'Litbang', 
+                period: '2025-2026', 
+                image: 'img/2026/litbang/alfina.jpg' 
+            },
+            { 
+                id: 'p24-8', 
+                name: 'Sovi Juanita Rosida', 
+                role: 'Litbang', 
+                period: '2025-2026', 
+                image: 'img/2026/litbang/sofia.jpg' 
+            },
+            { 
+                id: 'p24-8', 
+                name: 'Aulia Syiva Dwi Anggraeni', 
+                role: 'Litbang', 
+                period: '2025-2026', 
+                image: 'img/2026/litbang/aulia.jpg' 
+            },
+            { 
+                id: 'p24-8', 
+                name: 'Aufa Naura Hana', 
+                role: 'Litbang', 
+                period: '2025-2026', 
+                image: 'img/2026/litbang/aufa.jpg' 
+            },
+            { 
+                id: 'p24-8', 
+                name: 'Ceryl Tsabita Aqila Najwa', 
+                role: 'Litbang', 
+                period: '2025-2026', 
+                image: 'img/2026/litbang/ceryl.jpg' 
+            },
+            { 
+                id: 'p24-8', 
+                name: 'alifta Ziatul Mufida', 
+                role: 'Litbang', 
+                period: '2025-2026', 
+                image: 'img/2026/litbang/alifta.jpg' 
+            },
+            { 
+                id: 'p24-8', 
+                name: 'Syafrina Miftakhul Nur Ramadhani', 
+                role: 'Litbang', 
+                period: '2025-2026', 
+                image: 'img/2026/litbang/syafrina.jpg' 
+            },
+            { 
+                id: 'p24-8', 
+                name: 'Shafa Eka Nafista', 
+                role: 'Litbang', 
+                period: '2025-2026', 
+                image: 'img/2026/litbang/shafa.jpg' 
+            },
+            { 
+                id: 'p24-8', 
+                name: 'Nazwa Aurelia Hezar ', 
+                role: 'Litbang', 
+                period: '2025-2026', 
+                image: 'img/2026/litbang/nazwa.jpg' 
+            },
+            { 
+                id: 'p24-8', 
+                name: 'Vannesya Vazilatun Oktavia', 
+                role: 'Litbang', 
+                period: '2025-2026', 
+                image: 'img/2026/litbang/vannesya.jpg' 
+            },
+            { 
+                id: 'p24-8', 
+                name: 'Ihda Arzika Nuril Khoiriyah', 
+                role: 'Litbang', 
+                period: '2025-2026', 
+                image: 'img/2026/litbang/ihda.jpg' 
+            },
+            
+            //tekpram
+            { 
+                id: 'p24-9', 
+                name: 'Rifatulloh Ahmad Alfarisyi', 
+                role: 'Tekpram (CO)', 
+                period: '2025-2026', 
+                image: 'img/2026/tekpram/rifatulloh.jpg' 
+            },
+            { 
+                id: 'p24-9', 
+                name: 'Dita Permata Sari', 
+                role: 'Tekpram (Wakil)', 
+                period: '2025-2026', 
+                image: 'img/2026/tekpram/dita.jpg' 
+            },
+            { 
+                id: 'p24-9', 
+                name: 'A. Nabil P.A', 
+                role: 'Tekpram', 
+                period: '2025-2026', 
+                image: 'img/2026/tekpram/nabil.jpg' 
+            },
+            { 
+                id: 'p24-9', 
+                name: 'Ghaitsa Zahratul faikha', 
+                role: 'Tekpram', 
+                period: '2025-2026', 
+                image: 'img/2026/tekpram/ghaitsa.jpg' 
+            },
+            { 
+                id: 'p24-9', 
+                name: 'M. Haidar S', 
+                role: 'Tekpram', 
+                period: '2025-2026', 
+                image: 'img/2026/tekpram/haidar.jpg' 
+            },
+            { 
+                id: 'p24-9', 
+                name: 'Syifa Nur Atiqoh', 
+                role: 'Tekpram', 
+                period: '2025-2026', 
+                image: 'img/2026/tekpram/syifa.jpg' 
+            },
+            { 
+                id: 'p24-9', 
+                name: 'Navy Ardiananta', 
+                role: 'Tekpram', 
+                period: '2025-2026', 
+                image: 'img/2026/tekpram/navy.jpg' 
+            },
+            { 
+                id: 'p24-9', 
+                name: 'Aswani Widya Ardiningrum', 
+                role: 'Tekpram', 
+                period: '2025-2026', 
+                image: 'img/2026/tekpram/aswani.jpg' 
+            },
+            { 
+                id: 'p24-9', 
+                name: 'Dharma Maheswara', 
+                role: 'Tekpram',
+                period: '2025-2026', 
+                image: 'img/2026/tekpram/dharma.jpg' 
+            },
+            { 
+                id: 'p24-9', 
+                name: 'Erlambang', 
+                role: 'Tekpram', 
+                period: '2025-2026', 
+                image: 'img/2026/tekpram/erlambang.jpg' 
+            },
+            { 
+                id: 'p24-9', 
+                name: 'Zakyatul Afifah F', 
+                role: 'Tekpram', 
+                period: '2025-2026', 
+                image: 'img/2026/tekpram/zakyatul.jpg' 
+            },
+            
+            //pemateri
+            { 
+                id: 'p24-10', 
+                name: 'Sofie Ajeng R ', 
+                role: 'Pemateri (CO)', 
+                period: '2025-2026', 
+                image: 'img/2026/pemateri/sofie.jpg' 
+            },
+            { 
+                id: 'p24-10', 
+                name: 'Adhy Dhamar Rahmadan ', 
+                role: 'Pemateri (Wakil)', 
+                period: '2025-2026', 
+                image: 'img/2026/pemateri/adhy.jpg' 
+            },
+            { 
+                id: 'p24-10', 
+                name: 'Intan Nadya Fuzy  ', 
+                role: 'Pemateri', 
+                period: '2025-2026', 
+                image: 'img/2026/pemateri/intan.jpg' 
+            },
+            { 
+                id: 'p24-10', 
+                name: 'M. Mahfud Angga A ', 
+                role: 'Pemateri', 
+                period: '2025-2026', 
+                image: 'img/2026/pemateri/angga.jpg' 
+            },
+            { 
+                id: 'p24-10', 
+                name: 'Alya Rahma ', 
+                role: 'Pemateri', 
+                period: '2025-2026', 
+                image: 'img/2026/pemateri/alya.jpg' 
+            },
+            { 
+                id: 'p24-10', 
+                name: 'Satria Adiya P ', 
+                role: 'Pemateri', 
+                period: '2025-2026', 
+                image: 'img/2026/pemateri/satria.jpg' 
+            },
+            { 
+                id: 'p24-10', 
+                name: 'Amelia putri', 
+                role: 'Pemateri', 
+                period: '2025-2026', 
+                image: 'img/2026/pemateri/amelia.jpg' 
+            },
+            { 
+                id: 'p24-10', 
+                name: 'Reyvalino yansa ', 
+                role: 'Pemateri', 
+                period: '2025-2026', 
+                image: 'img/2026/pemateri/reyvalino.jpg' 
+            },
+            { 
+                id: 'p24-10', 
+                name: 'Julia Stina Sari ', 
+                role: 'Pemateri', 
+                period: '2025-2026', 
+                image: 'img/2026/pemateri/julia.jpg' 
+            },
+            { 
+                id: 'p24-10', 
+                name: 'Wahyu Febrianto', 
+                role: 'Pemateri', 
+                period: '2025-2026', 
+                image: 'img/2026/pemateri/wahyu.jpg' 
+            },
+            { 
+                id: 'p24-10', 
+                name: 'Safinatun Naja', 
+                role: 'Pemateri', 
+                period: '2025-2026', 
+                image: 'img/2026/pemateri/safinatun.jpg' 
+            },
+            { 
+                id: 'p24-10', 
+                name: 'M. Fairuz Akbar', 
+                role: 'Pemateri', 
+                period: '2025-2026', 
+                image: 'img/2026/pemateri/akbar.jpg' 
+            },
+            { 
+                id: 'p24-10', 
+                name: 'Ellena Alifi', 
+                role: 'Pemateri', 
+                period: '2025-2026', 
+                image: 'img/2026/pemateri/ellena.jpg' 
+            },
+            { 
+                id: 'p24-10', 
+                name: 'Daffa Wahyu ', 
+                role: 'Pemateri', 
+                period: '2025-2026', 
+                image: 'img/2026/pemateri/daffa.jpg' 
+            },
+            { 
+                id: 'p24-10', 
+                name: 'Sherly Nur Arisnawati ', 
+                role: 'Pemateri', 
+                period: '2025-2026', 
+                image: 'img/2026/pemateri/sherly.jpg' 
+            },
+            { 
+                id: 'p24-10', 
+                name: 'M. Reza Apriliawan ', 
+                role: 'Pemateri', 
+                period: '2025-2026', 
+                image: 'img/2026/pemateri/reza.jpg' 
+            },
+            { 
+                id: 'p24-10', 
+                name: 'Lola Susmiasari', 
+                role: 'Pemateri', 
+                period: '2025-2026', 
+                image: 'img/2026/pemateri/lola.jpg' 
+            },
+            { 
+                id: 'p24-10', 
+                name: 'M. Afrizal Amiruddin', 
+                role: 'Pemateri', 
+                period: '2025-2026', 
+                image: 'img/2026/pemateri/rizal.jpg' 
+            },
+            { 
+                id: 'p24-10', 
+                name: 'Zaskia Aulia Putri', 
+                role: 'Pemateri', 
+                period: '2025-2026', 
+                image: 'img/2026/pemateri/zaskia.jpg' 
+            },
+            { 
+                id: 'p24-10', 
+                name: 'jesika Aulia putri', 
+                role: 'Pemateri', 
+                period: '2025-2026', 
+                image: 'img/2026/pemateri/jesika.jpg' 
+            },
+            { 
+                id: 'p24-10', 
+                name: 'Alviana Laila', 
+                role: 'Pemateri', 
+                period: '2025-2026', 
+                image: 'img/2026/pemateri/alviana.jpg' 
+            },
+            { 
+                id: 'p24-10', 
+                name: 'Aulia dinda nur', 
+                role: 'Pemateri', 
+                period: '2025-2026', 
+                image: 'img/2026/pemateri/aulia.jpg' 
+            },
+            { 
+                id: 'p24-10', 
+                name: 'Hany Aryanti Dwi', 
+                role: 'Pemateri', 
+                period: '2025-2026', 
+                image: 'img/2026/pemateri/hany.jpg' 
+            },
+            { 
+                id: 'p24-10', 
+                name: 'Neisa Nur Aidzi', 
+                role: 'Pemateri', 
+                period: '2025-2026', 
+                image: 'img/2026/pemateri/neisa.jpg' 
+            },
+            { 
+                id: 'p24-10', 
+                name: 'Shofia Sabrina', 
+                role: 'Pemateri', 
+                period: '2025-2026', 
+                image: 'img/2026/pemateri/shofia.jpg' 
+            },
+            { 
+                id: 'p24-10', 
+                name: 'Shyrena Icha', 
+                role: 'Pemateri', 
+                period: '2025-2026', 
+                image: 'img/2026/pemateri/shyrena.jpg' 
+            },
+            { 
+                id: 'p24-10', 
+                name: 'Neiza Indra Pratama', 
+                role: 'Pemateri', 
+                period: '2025-2026', 
+                image: 'img/2026/pemateri/neiza.jpg' 
+            },
+            { 
+                id: 'p24-10', 
+                name: 'Cahya Dwi Lestari', 
+                role: 'Pemateri', 
+                period: '2025-2026', 
+                image: 'img/2026/pemateri/cahya.jpg' 
+            },
+            { 
+                id: 'p24-10', 
+                name: 'Mutiara Ramadhani', 
+                role: 'Pemateri', 
+                period: '2025-2026', 
+                image: 'img/2026/pemateri/mutiara.jpg' 
+            },
+            { 
+                id: 'p24-10', 
+                name: 'Nayla Salsabila', 
+                role: 'Pemateri', 
+                period: '2025-2026', 
+                image: 'img/2026/pemateri/nayla.jpg' 
+            },
+            { 
+                id: 'p24-10', 
+                name: 'Fadhila Rahma Hanum', 
+                role: 'Pemateri', 
+                period: '2025-2026', 
+                image: 'img/2026/pemateri/fadhila.jpg' 
+            },
+            { 
+                id: 'p24-10', 
+                name: 'Sabrina Maulani', 
+                role: 'Pemateri', 
+                period: '2025-2026', 
+                image: 'img/2026/pemateri/sabrina.jpg' 
+            },
+            { 
+                id: 'p24-10', 
+                name: 'Naura Anggun', 
+                role: 'Pemateri', 
+                period: '2025-2026', 
+                image: 'img/2026/pemateri/naura.jpg' 
+            },
+            { 
+                id: 'p24-10', 
+                name: 'Khanza Aura ', 
+                role: 'Pemateri', 
+                period: '2025-2026', 
+                image: 'img/2026/pemateri/khanza.jpg' 
+            },
+            { 
+                id: 'p24-10', 
+                name: 'Raviva gaizhani', 
+                role: 'Pemateri', 
+                period: '2025-2026', 
+                image: 'img/2026/pemateri/raviva.jpg' 
+            },
+            { 
+                id: 'p24-10', 
+                name: 'Nabila Leni', 
+                role: 'Pemateri', 
+                period: '2025-2026', 
+                image: 'img/2026/pemateri/nabilla.jpg' 
+            },
+            { 
+                id: 'p24-10', 
+                name: 'Anindyta Rahma', 
+                role: 'Pemateri', 
+                period: '2025-2026', 
+                image: 'img/2026/pemateri/anindyta.jpg' 
+            },
+            { 
+                id: 'p24-10', 
+                name: 'Naswa Bilqis', 
+                role: 'Pemateri', 
+                period: '2025-2026', 
+                image: 'img/2026/pemateri/naswa.jpg' 
+            },
+            { 
+                id: 'p24-10', 
+                name: 'Mei Alifvia', 
+                role: 'Pemateri', 
+                period: '2025-2026', 
+                image: 'img/2026/pemateri/mei.jpg' 
+            },
+            
+            // Periode 2026-2027
+
+
+        ];
+
+        const ACTIVITIES = [
+            { 
+                id: 'act-1', 
+                title: 'Penerimaan Tamu Penegak', 
+                date: '30-31 Agustus 2025', 
+                description: 'Menjelajahi masa depan teknologi dengan para ahli industri dalam sesi diskusi panel yang mendalam.', 
+                image: './img/2026/thumbnail/ptp.jpg',
+                imageUrl: '',  // Isi: https://drive.google.com/uc?id=FILE_ID
+                location: 'SMAN 1 Sumberrejo', 
+                status: 'Terlaksana', 
+                category: 'sosial',
+                likes: 0,
+                documentation: [
+                    // ARAHAN: Untuk mengubah link Foto Dokumentasi kegiatan ini, ganti URL di bawah ini
+                    { title: 'Foto Dokumentasi', link: 'https://drive.google.com/drive/folders/1e25b7WyNHz4b65EkHeRyHuAWCYS-htMm' }
+                ]
+            },
+            { 
+                id: 'act-2', 
+                title: 'Giat Pionering', 
+                date: '24 Oktober 2025', 
+                description: 'Sesi kolaboratif untuk mengasah keterampilan desain dan pemikiran kreatif bagi seluruh anggota.', 
+                image: './img/2026/thumbnail/pionering.jpg',
+                imageUrl: '',  // Isi: https://drive.google.com/uc?id=FILE_ID
+                location: 'SMAN 1 Sumberrejo', 
+                status: 'Terlaksana', 
+                category: 'Edukasi',
+                likes: 0,
+                documentation: [
+                    // ARAHAN: Untuk mengubah link Foto Dokumentasi kegiatan ini, ganti URL di bawah ini
+                    { title: 'Foto Dokumentasi', link: 'https://drive.google.com/drive/folders/1mTdvi-SOMLEzwTCM48cEvhX0YNCkqQnE' }
+                ]
+            },
+            { 
+                id: 'act-3', 
+                title: 'Buka bersama 1447 H', 
+                date: '3 Maret 2026', 
+                description: 'Perayaan pencapaian kita sepanjang tahun dalam suasana formal yang hangat dan penuh kebersamaan.', 
+                image: './img/2026/thumbnail/bukber.jpg',
+                imageUrl: '',  // Isi: https://drive.google.com/uc?id=FILE_ID
+                location: 'Aula, SMAN 1 Sumberrejo', 
+                status: 'Terlaksana', 
+                category: 'Sosial',
+                likes: 0,
+                documentation: [
+                    // ARAHAN: Untuk mengubah link Foto Dokumentasi kegiatan ini, ganti URL di bawah ini
+                    { title: 'Foto Dokumentasi', link: 'https://drive.google.com/drive/folders/1VGtK4hMpA7rvcBVDpn7nbDRdQM2t3J6T' }
+                ]
+            }
+        ];
+
+        const PAST_COLLECTIONS = [
+            { 
+                id: 'past-1', 
+                title: 'Ekspedisi Budaya 2022', 
+                category: 'Budaya', 
+                image: './img/past/thumbnail1.jpg',
+                imageUrl: '',  // Isi: https://drive.google.com/uc?id=FILE_ID
+                description: 'Perjalanan mendokumentasikan kearifan lokal di berbagai daerah.',
+                likes: 0,
+                documentation: [
+                    // ARAHAN: Untuk mengubah link Foto Dokumentasi kegiatan ini, ganti path di bawah ini
+                    { title: 'Foto Dokumentasi', link: './docs/past1/' }
+                ]
+            },
+            { 
+                id: 'past-2', 
+                title: 'Pameran Seni Digital', 
+                category: 'Seni', 
+                image: './img/past/thumbnail2.jpg',
+                imageUrl: '',  // Isi: https://drive.google.com/uc?id=FILE_ID
+                description: 'Menampilkan karya-karya terbaik dari komunitas lokal.',
+                likes: 0,
+                documentation: [
+                    // ARAHAN: Untuk mengubah link Foto Dokumentasi kegiatan ini, ganti path di bawah ini
+                    { title: 'Foto Dokumentasi', link: './docs/past2/' }
+                ]
+            },
+            { 
+                id: 'past-3', 
+                title: 'Aksi Hijau PASKANESS', 
+                category: 'Lingkungan', 
+                image: './img/past/thumbnail3.jpg',
+                imageUrl: '',  // Isi: https://drive.google.com/uc?id=FILE_ID
+                description: 'Program penanaman pohon dan edukasi lingkungan.',
+                likes: 0,
+                documentation: [
+                    // ARAHAN: Untuk mengubah link Foto Dokumentasi kegiatan ini, ganti path di bawah ini
+                    { title: 'Foto Dokumentasi', link: './docs/past3/' }
+                ]
+            }
+        ];
+
+        normalizeImageSources();
+
+        // --- Components ---
+
+        const Icon = ({ name, className }) => {
+            useEffect(() => {
+                if (window.lucide) window.lucide.createIcons();
+            }, [name]);
+            return <i data-lucide={name} className={className}></i>;
+        };
+
+        const Navbar = ({ activeTab, setActiveTab }) => {
+            return (
+                <nav className="fixed top-0 w-full z-50 bg-[#0a0e1a]/60 backdrop-blur-lg border-b border-sky-400/10">
+                    <div className="flex justify-between items-center px-8 py-4 max-w-7xl mx-auto">
+                        <div className="text-2xl font-semibold text-sky-300 tracking-wider">
+                            {WEBSITE_CONFIG.brandName}
+                        </div>
+                        <div className="hidden md:flex items-center space-x-8 font-medium tracking-tight">
+                                {[
+                                    { id: 'home', label: 'Beranda', icon: 'home' },
+                                    { id: 'archive', label: 'Arsip Kegiatan', icon: 'history' },
+                                    { id: 'structure', label: 'Struktur Pengurus', icon: 'users' },
+                                ].map((tab) => (
+                                    <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                                       className={`transition-colors duration-300 px-2 py-1 rounded relative ${
+                                           activeTab === tab.id ? "text-sky-300" : "text-slate-300 hover:text-sky-200 hover:bg-sky-400/10"
+                                       }`}>
+                                        <i data-lucide={tab.icon} className="w-4 h-4 inline mr-1"></i>
+                                        {tab.label}
+                                        {activeTab === tab.id && (
+                                            <div className="absolute -bottom-4 left-0 right-0 h-0.5 bg-sky-300"></div>
+                                        )}
+                                    </button>
+                                ))}
+                        </div>
+                    </div>
+                </nav>
+            );
+        };
+
+        const Footer = () => (
+            <footer className="bg-[#0a0e1a] w-full py-12 border-t border-sky-400/10 mt-20">
+                <div className="flex flex-col md:flex-row justify-between items-center px-8 max-w-7xl mx-auto text-center md:text-left">
+                    <div className="mb-8 md:mb-0">
+                        <div className="text-xl font-bold text-sky-300 mb-2">{WEBSITE_CONFIG.brandName}</div>
+                        <p className="text-slate-400 text-sm">{WEBSITE_CONFIG.footerText}</p>
+                    </div>
+                    <div className="flex flex-wrap justify-center gap-8 text-sm">
+                        <a className="text-slate-400 hover:text-sky-300 transition-colors" href="#">Kebijakan Privasi</a>
+                        <a className="text-slate-400 hover:text-sky-300 transition-colors" href="#">Syarat & Ketentuan</a>
+                        <a className="text-slate-400 hover:text-sky-300 transition-colors" href="#">Kreator 2026 by M. Alfan</a>
+                    </div>
+                    <div className="flex gap-4 mt-8 md:mt-0">
+                        <div className="w-10 h-10 glass-panel rounded-full flex items-center justify-center cursor-pointer hover:text-primary transition-colors">
+                            <Icon name="share-2" className="w-5 h-5" />
+                        </div>
+                        <div className="w-10 h-10 glass-panel rounded-full flex items-center justify-center cursor-pointer hover:text-primary transition-colors">
+                            <Icon name="globe" className="w-5 h-5" />
+                        </div>
+                    </div>
+                </div>
+            </footer>
+        );
+
+        const ActivityModal = ({ activity, onClose }) => {
+            if (!activity) return null;
+            return (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8">
+                    <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={onClose}></div>
+                    <div className="glass-panel-elevated w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl relative z-10 animate-in fade-in zoom-in duration-300">
+                        <button onClick={onClose} className="absolute top-6 right-6 p-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors z-20">
+                            <Icon name="x" className="w-6 h-6" />
+                        </button>
+                        <div className="flex flex-col md:flex-row">
+                            <div className="md:w-1/2 h-64 md:h-auto">
+                                <img src={getImageUrl(activity)} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                            </div>
+                            <div className="md:w-1/2 p-8 md:p-12">
+                                <div className="flex items-center gap-3 mb-6">
+                                    <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold tracking-widest uppercase">
+                                        {activity.status || activity.category}
+                                    </span>
+                                    <span className="text-on-surface-variant text-sm font-medium">{activity.date || 'Arsip'}</span>
+                                </div>
+                                <h2 className="text-3xl md:text-4xl font-bold mb-6 tracking-tight leading-tight">{activity.title}</h2>
+                                <div className="space-y-6 mb-8">
+                                    <div className="flex items-start gap-4">
+                                        <div className="p-2 rounded-lg bg-primary/5"><Icon name="map-pin" className="w-5 h-5 text-primary" /></div>
+                                        <div>
+                                            <p className="text-xs text-on-surface-variant font-bold uppercase tracking-widest mb-1">Lokasi</p>
+                                            <p className="text-on-surface">{activity.location || 'Lokasi tidak tersedia'}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-start gap-4">
+                                        <div className="p-2 rounded-lg bg-primary/5"><Icon name="info" className="w-5 h-5 text-primary" /></div>
+                                        <div>
+                                            <p className="text-xs text-on-surface-variant font-bold uppercase tracking-widest mb-1">Deskripsi</p>
+                                            <p className="text-on-surface-variant leading-relaxed">{activity.description}</p>
+                                        </div>
+                                    </div>
+                                    {activity.documentation && activity.documentation.length > 0 && (
+                                        <div className="flex items-start gap-4">
+                                            <div className="p-2 rounded-lg bg-primary/5"><Icon name="file-text" className="w-5 h-5 text-primary" /></div>
+                                            <div className="w-full">
+                                                <p className="text-xs text-on-surface-variant font-bold uppercase tracking-widest mb-3 border-b-2 border-primary">Dokumentasi</p>
+                                                <div className="space-y-2">
+                                                    {activity.documentation.filter(doc => doc.title.toLowerCase().includes('foto') || doc.title.toLowerCase().includes('galeri') || doc.title.toLowerCase().includes('album')).map((doc, index) => (
+                                                        <a 
+                                                            key={index} 
+                                                            href={doc.link} 
+                                                            target="_blank" 
+                                                            rel="noopener noreferrer"
+                                                            className="flex items-center gap-2 p-3 rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors group"
+                                                        >
+                                                            <Icon name="external-link" className="w-4 h-4 text-white group-hover:scale-110 transition-transform" />
+                                                            <span className="text-white group-hover:text-white transition-colors">Foto Dokumentasi</span>
+                                                        </a>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="flex gap-3">
+                                    <button 
+                                        onClick={() => {
+                                            const shareUrl = `${window.location.origin}${window.location.pathname}#activity-${activity.id}`;
+                                            const shareText = `Lihat dokumentasi kegiatan: ${activity.title}`;
+                                            if (navigator.share) {
+                                                navigator.share({
+                                                    title: activity.title,
+                                                    text: shareText,
+                                                    url: shareUrl
+                                                });
+                                            } else {
+                                                navigator.clipboard.writeText(`${shareText} ${shareUrl}`);
+                                                alert('Link berhasil disalin ke clipboard!');
+                                            }
+                                        }}
+                                        className="flex-1 py-4 rounded-xl glass-panel text-primary font-bold hover:bg-primary/10 transition-all shadow-lg shadow-primary/10 flex items-center justify-center gap-2"
+                                    >
+                                        <Icon name="share-2" className="w-5 h-5" />
+                                        Bagikan
+                                    </button>
+                                    {(!activity.documentation || activity.documentation.length === 0) && (
+                                        <button className="flex-1 py-4 rounded-xl bg-primary text-on-primary font-bold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20">
+                                            Lihat Dokumentasi
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const HomePage = ({ onNavigate }) => {
+            const [selectedActivity, setSelectedActivity] = useState(null);
+            const [activityLikes, setActivityLikes] = useState(() => {
+                // Load likes from localStorage
+                const saved = localStorage.getItem('paskanessActivityLikes');
+                return saved ? JSON.parse(saved) : {};
+            });
+
+            // Generate device ID for like tracking
+            const getDeviceId = () => {
+                let deviceId = localStorage.getItem('paskanessDeviceId');
+                if (!deviceId) {
+                    deviceId = 'device_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                    localStorage.setItem('paskanessDeviceId', deviceId);
+                }
+                return deviceId;
+            };
+
+            const handleLike = (activityId, e) => {
+                e.stopPropagation(); // Prevent triggering the card click
+                
+                const deviceId = getDeviceId();
+                const likeKey = `${deviceId}_${activityId}`;
+                const hasLiked = localStorage.getItem(likeKey);
+                
+                if (hasLiked) {
+                    // User already liked this activity
+                    return;
+                }
+                
+                // Mark as liked for this device
+                localStorage.setItem(likeKey, 'true');
+                
+                // Update likes count
+                const newLikes = {
+                    ...activityLikes,
+                    [activityId]: (activityLikes[activityId] || 0) + 1
+                };
+                setActivityLikes(newLikes);
+                localStorage.setItem('paskanessActivityLikes', JSON.stringify(newLikes));
+            };
+
+            const hasUserLiked = (activityId) => {
+                const deviceId = getDeviceId();
+                const likeKey = `${deviceId}_${activityId}`;
+                return localStorage.getItem(likeKey) === 'true';
+            };
+
+            return (
+                <div className="pt-24 fade-in">
+                    <section className="relative min-h-[80vh] flex flex-col items-center justify-center px-6 overflow-hidden">
+                        <div className="absolute top-1/4 -left-20 w-96 h-96 bg-sky-500/10 rounded-full blur-[120px]"></div>
+                        <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-purple-500/10 rounded-full blur-[120px]"></div>
+                        <div className="relative z-10 max-w-5xl mx-auto text-center">
+                            <div className="mb-8 flex justify-center relative group">
+                                <div className="logo-frame glass-panel-elevated shadow-[0_0_50px_rgba(125,211,252,0.1)]">
+                                    {window.currentLogoImage || WEBSITE_CONFIG.imageUrl || WEBSITE_CONFIG.logoImage ? (
+                                        <img 
+                                            src={window.currentLogoImage || WEBSITE_CONFIG.imageUrl || WEBSITE_CONFIG.logoImage} 
+                                            alt={`${WEBSITE_CONFIG.brandName} Logo`}
+                                            className="logo-image cursor-pointer"
+                                            onClick={() => document.getElementById('logo-admin-panel').classList.toggle('hidden')}
+                                        />
+                                    ) : (
+                                        <Icon name={WEBSITE_CONFIG.logoIcon} className="logo-icon-fallback text-primary cursor-pointer hover:scale-110 transition-all" 
+                                              onClick={() => document.getElementById('logo-admin-panel').classList.toggle('hidden')} />
+                                    )}
+                                </div>
+                                {/* Admin Panel - Logo Editor */}
+                                <div id="logo-admin-panel" className="hidden absolute -top-4 left-full ml-4 w-80 glass-panel-elevated p-6 rounded-3xl shadow-2xl z-50 group-hover:opacity-100 opacity-0 transition-all duration-300 pointer-events-none group-hover:pointer-events-auto">
+                                    <h4 className="text-lg font-bold mb-4 text-primary flex items-center gap-2">
+                                        <Icon name="edit-3" className="w-5 h-5" /> Edit Logo
+                                    </h4>
+                                    <input 
+                                        type="file" 
+                                        accept="image/*" 
+                                        id="logo-file-input"
+                                        className="w-full p-3 rounded-xl bg-white/5 border border-primary/30 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-primary/90 file:text-white hover:file:bg-primary cursor-pointer transition-all"
+                                        onChange={handleLogoChange}
+                                    />
+                                    <p className="text-xs text-on-surface-variant mt-2">Upload gambar baru (JPG, PNG). Otomatis tersimpan.</p>
+                                    <button 
+                                        onClick={resetLogo}
+                                        className="w-full mt-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-on-surface border border-white/20 transition-all text-sm font-medium"
+                                    >
+                                        Reset ke Default
+                                    </button>
+                                </div>
+                            </div>
+                            <h1 className="text-5xl md:text-7xl font-extrabold mb-6 tracking-tight">
+                                {WEBSITE_CONTENT.home.heroTitle} <span className="text-gradient">{WEBSITE_CONFIG.brandName}</span>
+                            </h1>
+                            <p className="text-xl md:text-2xl text-on-surface-variant max-w-3xl mx-auto leading-relaxed mb-10">
+                                {WEBSITE_CONTENT.home.heroSubtitle}
+                            </p>
+                            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                                <button onClick={() => onNavigate('archive')} className="px-8 py-4 bg-primary text-on-primary font-bold rounded-xl shadow-lg shadow-primary/20 hover:brightness-110 transition-all active:scale-95">
+                                    Lihat Arsip Kegiatan
+                                </button>
+                                <button className="px-8 py-4 glass-panel text-primary font-bold rounded-xl hover:bg-white/5 transition-all active:scale-95">
+                                    Pelajari Visi Kami
+                                </button>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section className="max-w-7xl mx-auto px-8 py-24">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="md:col-span-2 glass-panel p-10 rounded-3xl relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 p-8 text-primary/10 group-hover:text-primary/20 transition-colors">
+                                    <Icon name="eye" className="w-32 h-32" />
+                                </div>
+                                <h2 className="text-3xl font-bold text-primary mb-6">{WEBSITE_CONTENT.home.visionTitle}</h2>
+                                <p className="text-xl text-on-surface-variant leading-relaxed max-w-xl relative z-10">{WEBSITE_CONTENT.home.visionText}</p>
+                            </div>
+                            <div className="glass-panel p-8 rounded-3xl flex flex-col justify-between">
+                                <div className="space-y-4">
+                                    <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center"><Icon name="rocket" className="w-6 h-6 text-tertiary" /></div>
+                                    <h3 className="text-2xl font-bold">{WEBSITE_CONTENT.home.missionTitle}</h3>
+                                    <p className="text-on-surface-variant">{WEBSITE_CONTENT.home.missionText}</p>
+                                </div>
+                                <div className="mt-8 pt-8">
+                                    <div className="flex items-center gap-3 text-tertiary font-semibold cursor-pointer group">
+                                        <span>Lihat Selengkapnya</span>
+                                        <Icon name="arrow-right" className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section className="max-w-7xl mx-auto px-8 py-24">
+                        <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
+                            <div>
+                                <h2 className="text-4xl font-bold mb-4">{WEBSITE_CONTENT.home.highlightTitle}</h2>
+                                <p className="text-on-surface-variant">{WEBSITE_CONTENT.home.highlightSubtitle}</p>
+                            </div>
+                            <button onClick={() => onNavigate('archive')} className="text-primary border border-primary/30 px-6 py-2 rounded-full hover:bg-primary/5 transition-all">
+                                Arsip Lengkap
+                            </button>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                            {ACTIVITIES.map((activity) => (
+                                <div key={activity.id} onClick={() => setSelectedActivity(activity)} className="glass-panel rounded-3xl overflow-hidden group cursor-pointer hover:shadow-[0_0_30px_rgba(125,211,252,0.1)] transition-all duration-500">
+                                    <div className="h-48 overflow-hidden relative">
+                                        <img src={getImageUrl(activity)} alt={activity.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
+                                        <div className="absolute top-4 left-4 glass-panel-elevated px-3 py-1 rounded-lg text-xs font-bold text-primary">{activity.date}</div>
+                                    </div>
+                                    <div className="p-6">
+                                        <div className="flex items-center justify-between mb-3 gap-3">
+                                            <h3 className="text-xl font-bold group-hover:text-primary transition-colors">{activity.title}</h3>
+                                            {activity.category && (
+                                                <span className="rounded-full bg-primary/10 px-3 py-1 text-xs uppercase tracking-wider text-primary">
+                                                    {activity.category}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <p className="text-on-surface-variant text-sm mb-4 line-clamp-2">{activity.description}</p>
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2 text-on-surface-variant text-xs"><Icon name="map-pin" className="w-4 h-4" /><span>{activity.location}</span></div>
+                                            <div className="flex items-center gap-3">
+                                                <button 
+                                                    onClick={(e) => handleLike(activity.id, e)}
+                                                    className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                                                        hasUserLiked(activity.id) 
+                                                            ? 'bg-red-500/20 text-red-400' 
+                                                            : 'bg-white/5 text-on-surface-variant hover:bg-red-500/10 hover:text-red-400'
+                                                    }`}
+                                                >
+                                                    <Icon name="heart" className={`w-4 h-4 ${hasUserLiked(activity.id) ? 'fill-current' : ''}`} />
+                                                    <span>{activityLikes[activity.id] || activity.likes || 0}</span>
+                                                </button>
+                                                <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">{activity.status}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+                    <ActivityModal activity={selectedActivity} onClose={() => setSelectedActivity(null)} />
+                </div>
+            );
+        };
+
+        const ArchivePage = () => {
+            const [selectedActivity, setSelectedActivity] = useState(null);
+            const [activityLikes, setActivityLikes] = useState(() => {
+                // Load likes from localStorage
+                const saved = localStorage.getItem('paskanessActivityLikes');
+                return saved ? JSON.parse(saved) : {};
+            });
+
+            // Generate device ID for like tracking
+            const getDeviceId = () => {
+                let deviceId = localStorage.getItem('paskanessDeviceId');
+                if (!deviceId) {
+                    deviceId = 'device_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                    localStorage.setItem('paskanessDeviceId', deviceId);
+                }
+                return deviceId;
+            };
+
+            const handleLike = (activityId, e) => {
+                e.stopPropagation(); // Prevent triggering the card click
+                
+                const deviceId = getDeviceId();
+                const likeKey = `${deviceId}_${activityId}`;
+                const hasLiked = localStorage.getItem(likeKey);
+                
+                if (hasLiked) {
+                    // User already liked this activity
+                    return;
+                }
+                
+                // Mark as liked for this device
+                localStorage.setItem(likeKey, 'true');
+                
+                // Update likes count
+                const newLikes = {
+                    ...activityLikes,
+                    [activityId]: (activityLikes[activityId] || 0) + 1
+                };
+                setActivityLikes(newLikes);
+                localStorage.setItem('paskanessActivityLikes', JSON.stringify(newLikes));
+            };
+
+            const hasUserLiked = (activityId) => {
+                const deviceId = getDeviceId();
+                const likeKey = `${deviceId}_${activityId}`;
+                return localStorage.getItem(likeKey) === 'true';
+            };
+
+            return (
+                <div className="pt-32 pb-20 px-6 max-w-7xl mx-auto fade-in">
+                    <header className="mb-16 text-center">
+                        <h1 className="text-5xl md:text-6xl font-extrabold text-on-surface tracking-tight mb-4">
+                            {WEBSITE_CONTENT.archive.title.split(' ')[0]} <span className="text-primary">{WEBSITE_CONTENT.archive.title.split(' ')[1]}</span>
+                        </h1>
+                        <p className="text-on-surface-variant max-w-2xl mx-auto text-lg">{WEBSITE_CONTENT.archive.subtitle}</p>
+                    </header>
+
+                    <section className="mb-24">
+                        <div className="flex items-center gap-3 mb-10">
+                            <Icon name="history" className="text-primary w-8 h-8" />
+                            <h2 className="text-3xl font-bold tracking-tight">{WEBSITE_CONTENT.archive.recentTitle}</h2>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                            {ACTIVITIES.map((activity) => (
+                                <div key={activity.id} onClick={() => setSelectedActivity(activity)} className="glass-panel rounded-xl overflow-hidden group hover:shadow-[0_0_30px_rgba(125,211,252,0.1)] transition-all duration-500 cursor-pointer">
+                                    <div className="h-56 w-full overflow-hidden relative">
+                                        <img src={getImageUrl(activity)} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" referrerPolicy="no-referrer" />
+                                        <div className="absolute top-4 left-4 glass-panel-elevated px-3 py-1 rounded-full text-xs font-bold text-on-surface-variant tracking-widest uppercase">{activity.status}</div>
+                                    </div>
+                                    <div className="p-8">
+                                        <div className="flex items-center gap-2 text-primary text-sm font-medium mb-3"><Icon name="calendar" className="w-4 h-4" />{activity.date}</div>
+                                        <h3 className="text-xl font-bold mb-3 group-hover:text-primary transition-colors">{activity.title}</h3>
+                                        <p className="text-on-surface-variant text-sm leading-relaxed mb-6 line-clamp-3">{activity.description}</p>
+                                        <div className="flex items-center justify-between gap-3">
+                                            <button 
+                                                onClick={(e) => handleLike(activity.id, e)}
+                                                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                                                    hasUserLiked(activity.id) 
+                                                        ? 'bg-red-500/20 text-red-400' 
+                                                        : 'bg-white/5 text-on-surface-variant hover:bg-red-500/10 hover:text-red-400'
+                                                }`}
+                                            >
+                                                <Icon name="heart" className={`w-4 h-4 ${hasUserLiked(activity.id) ? 'fill-current' : ''}`} />
+                                                <span>{activityLikes[activity.id] || activity.likes || 0}</span>
+                                            </button>
+                                            <div className="w-full py-3 rounded-lg border border-primary/30 text-primary font-semibold glass-panel-elevated group-hover:bg-primary/20 transition-all duration-300 flex items-center justify-center gap-2">
+                                                <Icon name="eye" className="w-4 h-4" />Lihat Detail
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+
+                    <section className="mb-24">
+                        <div className="flex items-center gap-3 mb-10">
+                            <Icon name="history" className="text-on-surface-variant w-8 h-8" />
+                            <h2 className="text-3xl font-bold tracking-tight">{WEBSITE_CONTENT.archive.pastTitle}</h2>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-4 md:grid-rows-2 gap-6">
+                            {PAST_COLLECTIONS.map((item, idx) => (
+                                <div key={item.id} onClick={() => setSelectedActivity({ ...item, status: 'Arsip', location: 'N/A' })} className={`glass-panel rounded-xl overflow-hidden group relative min-h-[300px] cursor-pointer ${idx === 0 ? "md:col-span-2 md:row-span-2" : idx === 1 ? "md:col-span-2 md:row-span-1" : "md:col-span-1 md:row-span-1"}`}>
+                                    <img src={getImageUrl(item)} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" referrerPolicy="no-referrer" />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent"></div>
+                                    <div className="absolute bottom-0 left-0 p-8 w-full">
+                                        <div className="text-primary text-xs font-bold mb-2 tracking-[0.2em] uppercase">{item.category}</div>
+                                        <h3 className="text-2xl font-bold mb-3 text-white">{item.title}</h3>
+                                        <p className="text-slate-200 text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-500 mb-4">{item.description}</p>
+                                        <button 
+                                            onClick={(e) => handleLike(item.id, e)}
+                                            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                                                hasUserLiked(item.id) 
+                                                    ? 'bg-red-500/20 text-red-400' 
+                                                    : 'bg-white/10 text-white hover:bg-red-500/20 hover:text-red-400'
+                                            }`}
+                                        >
+                                            <Icon name="heart" className={`w-4 h-4 ${hasUserLiked(item.id) ? 'fill-current' : ''}`} />
+                                            <span>{activityLikes[item.id] || item.likes || 0}</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+                    <ActivityModal activity={selectedActivity} onClose={() => setSelectedActivity(null)} />
+                </div>
+            );
+        };
+
+        const StructurePage = () => {
+            const [activePeriod, setActivePeriod] = useState(AVAILABLE_PERIODS[0]);
+            const filteredMembers = useMemo(() => MEMBERS.filter(m => m.period === activePeriod), [activePeriod]);
+
+            const grouped = useMemo(() => {
+                const excludedRoles = [
+                    'Ketua', 
+                    'Wakil Ketua', 
+                    'Pemangku Adat', 
+                    'Kerana', 
+                    'Kerani', 
+                    'Litev', 
+                    'Litbang', 
+                    'Tekpram', 
+                    'Pemateri', 
+                    'Juang'
+                ];
+
+                return {
+                    ketua: filteredMembers.find(m => m.role === 'Ketua'),
+                    wakil: filteredMembers.find(m => m.role === 'Wakil Ketua'),
+                    pemangkuAdat: filteredMembers.filter(m => 
+                        m.role === 'Pemangku Adat 1' || m.role === 'Pemangku Adat 2' || m.role === 'Pemangku Adat 3' ),
+                    sekretariat: filteredMembers.filter(m => 
+                        m.role === 'Kerana (CO)' || m.role === 'Kerani (Wakil)' ||
+                        m.role === 'Kerana' || m.role === 'Kerani'),
+                    juang: filteredMembers.filter(m => m.role === 'Juang'||
+                        m.role === 'Juang (CO)'|| m.role === 'Juang (Wakil)'),
+                    litev: filteredMembers.filter(m => m.role === 'Litev' || 
+                        m.role === 'Litev (CO)' || m.role === 'Litev (Wakil)'),
+                    litbang: filteredMembers.filter(m => m.role === 'Litbang' || 
+                        m.role === 'Litbang (CO)' || m.role === 'Litbang (Wakil)'),
+                    tekpram: filteredMembers.filter(m => m.role === 'Tekpram' || 
+                        m.role === 'Tekpram (CO)' || m.role === 'Tekpram (Wakil)'),
+                    pemateri: filteredMembers.filter(m => m.role === 'Pemateri' || 
+                        m.role === 'Pemateri (CO)' || m.role === 'Pemateri (Wakil)'),
+                    departemen: filteredMembers.filter(m => m.role === 'buangan')
+                };
+            }, [filteredMembers]);
+
+            const MemberCard = ({ member, colorClass = "text-primary" }) => (
+                <div className="glass-panel p-6 rounded-2xl text-center hover:translate-y-[-8px] hover:shadow-[0_10px_30px_rgba(0,0,0,0.2)] transition-all duration-300 group">
+                    <div className="overflow-hidden rounded-xl mb-4">
+                        <img src={getImageUrl(member)} className="w-24 h-24 mx-auto object-cover border border-white/10 group-hover:scale-110 transition-transform duration-500" referrerPolicy="no-referrer" />
+                    </div>
+                    <p className={`text-xs font-bold uppercase tracking-widest mb-1 ${colorClass}`}>{member.role}</p>
+                    <p className="text-lg font-semibold">{member.name}</p>
+                </div>
+            );
+
+            const RoleSection = ({ title, members, colorClass }) => {
+                if (members.length === 0) return null;
+                return (
+                    <div className="mb-24">
+                        <h3 className="text-2xl font-bold mb-10 flex items-center gap-3">
+                            <span className={`w-12 h-[2px] ${colorClass.replace('text-', 'bg-')}`}></span>{title}
+                        </h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                            {members.map(member => <MemberCard key={member.id} member={member} colorClass={colorClass} />)}
+                        </div>
+                    </div>
+                );
+            };
+
+            return (
+                <div className="pt-32 pb-20 px-6 max-w-7xl mx-auto fade-in">
+                    <header className="text-center mb-16">
+                        <h1 className="text-5xl md:text-6xl font-extrabold text-on-background tracking-tight mb-6">
+                            {WEBSITE_CONTENT.structure.title.split(' ')[0]} <span className="text-primary">{WEBSITE_CONTENT.structure.title.split(' ')[1]}</span>
+                        </h1>
+                        <p className="text-on-surface-variant max-w-2xl mx-auto text-lg">{WEBSITE_CONTENT.structure.subtitle}</p>
+                    </header>
+
+                    <div className="flex flex-col items-center mb-20">
+                        <div className="glass-panel p-1.5 rounded-full flex gap-1 inline-flex overflow-x-auto max-w-full">
+                            {AVAILABLE_PERIODS.map((period) => (
+                                <button key={period} onClick={() => setActivePeriod(period)} className={`px-8 py-3 rounded-full text-sm font-bold transition-all duration-300 whitespace-nowrap ${activePeriod === period ? "bg-primary/15 border border-primary/40 text-primary shadow-[0_0_20px_rgba(125,211,252,0.1)]" : "text-on-surface-variant hover:text-primary hover:bg-white/5"}`}>
+                                    Periode {period}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {filteredMembers.length === 0 ? (
+                        <div className="glass-panel p-12 rounded-3xl text-center w-full">
+                            <Icon name="users" className="w-16 h-16 text-on-surface-variant mx-auto mb-4 opacity-20" />
+                            <p className="text-on-surface-variant text-xl">{WEBSITE_CONTENT.structure.noData}</p>
+                        </div>
+                    ) : (
+                        <>
+                            {grouped.ketua && (
+                                <div className="mb-24">
+                                    <h3 className="text-2xl font-bold mb-10 flex items-center gap-3"><span className="w-12 h-[2px] bg-primary"></span>{WEBSITE_CONTENT.structure.categories.pimpinan}</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                                        <div className="md:col-span-8 glass-panel rounded-3xl p-8 flex flex-col md:flex-row items-center gap-8 group hover:shadow-[0_0_30px_rgba(125,211,252,0.15)] transition-all duration-500">
+                                            <div className="overflow-hidden rounded-2xl">
+                                                <img src={getImageUrl(grouped.ketua)} className="w-48 h-48 md:w-64 md:h-64 object-cover border-2 border-primary/20 group-hover:scale-110 transition-transform duration-700" referrerPolicy="no-referrer" />
+                                            </div>
+                                            <div className="text-center md:text-left flex-1">
+                                                <span className="inline-block px-4 py-1 rounded-full bg-primary/10 text-primary text-sm font-semibold mb-4 tracking-widest uppercase">Ketua</span>
+                                                <h2 className="text-4xl font-bold text-on-surface mb-3 tracking-tight">{grouped.ketua.name}</h2>
+                                                <p className="text-on-surface-variant text-lg leading-relaxed mb-6 italic">"{grouped.ketua.quote || 'Membangun masa depan bersama.'}"</p>
+                                                <div className="flex justify-center md:justify-start gap-4">
+                                                    <Icon name="link" className="text-primary cursor-pointer hover:scale-125 transition-transform" />
+                                                    <Icon name="mail" className="text-primary cursor-pointer hover:scale-125 transition-transform" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {grouped.wakil && (
+                                            <div className="md:col-span-4 glass-panel rounded-3xl p-8 flex flex-col items-center justify-center text-center group hover:shadow-[0_0_30px_rgba(168,85,247,0.15)] transition-all duration-500">
+                                                <div className="overflow-hidden rounded-full mb-6">
+                                                    <img src={getImageUrl(grouped.wakil)} className="w-40 h-40 object-cover border-2 border-purple-500/20 group-hover:scale-110 transition-transform duration-700" referrerPolicy="no-referrer" />
+                                                </div>
+                                                <span className="px-3 py-1 rounded-full bg-purple-500/10 text-tertiary text-xs font-bold mb-3 tracking-widest uppercase">Wakil Ketua</span>
+                                                <h3 className="text-2xl font-bold text-on-surface">{grouped.wakil.name}</h3>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                            <RoleSection 
+                                title={WEBSITE_CONTENT.structure.categories.pemangkuAdat} 
+                                members={grouped.pemangkuAdat} 
+                                colorClass="text-primary" 
+                            />
+                            <RoleSection 
+                                title={WEBSITE_CONTENT.structure.categories.sekretariat} 
+                                members={grouped.sekretariat} 
+                                colorClass="text-primary" 
+                            />
+                            <RoleSection 
+                                title={WEBSITE_CONTENT.structure.categories.juang} 
+                                members={grouped.juang} 
+                                colorClass="text-tertiary"
+                            />
+                            <RoleSection 
+                                title={WEBSITE_CONTENT.structure.categories.litev} 
+                                members={grouped.litev} 
+                                colorClass="text-primary" 
+                            />
+                            <RoleSection 
+                                title={WEBSITE_CONTENT.structure.categories.litbang} 
+                                members={grouped.litbang} 
+                                colorClass="text-primary" 
+                            />
+                            <RoleSection 
+                                title={WEBSITE_CONTENT.structure.categories.tekpram} 
+                                members={grouped.tekpram} 
+                                colorClass="text-primary" 
+                            />
+                            <RoleSection 
+                                title={WEBSITE_CONTENT.structure.categories.pemateri} 
+                                members={grouped.pemateri} 
+                                colorClass="text-primary" 
+                            />
+                            {grouped.departemen.length > 0 && (
+                                <div className="mb-24">
+                                    <h3 className="text-2xl font-bold mb-10 flex items-center gap-3"><span className="w-12 h-[2px] bg-primary"></span>{WEBSITE_CONTENT.structure.categories.departemen}</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                        {grouped.departemen.map(member => <MemberCard key={member.id} member={member} colorClass={member.role.includes('Bakat') ? "text-tertiary" : "text-primary"} />)}
+                                    </div>
+                                </div>
+                            )}
+                        </>
+                    )}
+                </div>
+            );
+        };
+
+        function App() {
+            const [activeTab, setActiveTab] = useState('home');
+
+            useEffect(() => {
+                // Load saved logo from localStorage
+                const savedLogo = localStorage.getItem('paskanessLogoImage');
+                if (savedLogo) {
+                    window.currentLogoImage = savedLogo;
+                }
+                document.title = `${WEBSITE_CONFIG.brandName} - Jejak Karya & Arsip`;
+            }, []);
+
+            useEffect(() => {
+                window.scrollTo(0, 0);
+                if (window.lucide) window.lucide.createIcons();
+            }, [activeTab]);
+
+            // Global functions for logo management
+            window.handleLogoChange = (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        window.currentLogoImage = e.target.result;
+                        localStorage.setItem('paskanessLogoImage', window.currentLogoImage);
+                        // Refresh icons
+                        if (window.lucide) window.lucide.createIcons();
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+
+            window.resetLogo = () => {
+                window.currentLogoImage = null;
+                localStorage.removeItem('paskanessLogoImage');
+                document.getElementById('logo-file-input').value = '';
+                if (window.lucide) window.lucide.createIcons();
+            };
+
+            return (
+                <div className="min-h-screen flex flex-col">
+                    <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
+                    <main className="flex-grow">
+                        {activeTab === 'home' && <HomePage onNavigate={setActiveTab} />}
+                        {activeTab === 'archive' && <ArchivePage />}
+                        {activeTab === 'structure' && <StructurePage />}
+                    </main>
+                    <Footer />
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
