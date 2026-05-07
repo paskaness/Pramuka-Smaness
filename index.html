@@ -4,74 +4,34 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PASKANESS - Jejak Karya & Arsip</title>
-    <!-- 
-      PANDUAN PENGELOLAAN (ADMIN):
-      --------------------------------------------------
-      1. UNTUK MENGGANTI NAMA ORGANISASI / LOGO:
-         - Cari "const WEBSITE_CONFIG" di bawah.
-         - Ubah 'brandName' untuk nama organisasi.
-         - Ubah 'logoImage' untuk path gambar logo (contoh: '../cover.jpg') ATAU gunakan admin panel.
-         - Ubah 'logoIcon' untuk fallback icon (https://lucide.dev/icons).
-         - ADMIN PANEL: Klik tombol edit logo di hero section (hanya muncul di development).
-      
-      2. UNTUK MENGGANTI TULISAN / KONTEN HALAMAN:
-         - Cari "const WEBSITE_CONTENT" di bawah.
-         - Semua teks di Beranda, Arsip, dan Struktur ada di sana.
-      
-      3. UNTUK MENAMBAH PERIODE BARU:
-         - Cari "const AVAILABLE_PERIODS" di bawah.
-         - Tambahkan tahun baru (misal: '2025-2026') di awal daftar: ['2025-2026', '2024-2025', ...]
-      
-      4. UNTUK MENAMBAH / MENGUBAH ANGGOTA:
-         - Cari "const MEMBERS" di bawah.
-         - Gunakan template ini:
-           {
-               id: 'unik-123',
-               name: 'Nama Lengkap',
-               role: 'Ketua', // Pilih: Ketua, Wakil Ketua, Pemangku Adat, Kerana, Kerani, Litev, Litbang, Tekpram, Pemateri, Juang, atau nama Bidang
-               period: '2024-2025',
-               image: 'https://link-foto.com/foto.jpg',
-               quote: 'Kata mutiara (khusus Ketua)'
-           },
-      
-      5. UNTUK MENGUBAH LINK DOKUMENTASI KEGIATAN:
-         - Cari "const ACTIVITIES" atau "const PAST_COLLECTIONS" di bawah.
-         - Setiap kegiatan memiliki komentar "// ARAHAN: Untuk mengubah link Foto Dokumentasi kegiatan ini, ganti URL di bawah ini"
-         - Ganti link pada item 'Foto Dokumentasi' untuk mengubah tujuan tombol.
-      
-      --------------------------------------------------
-    -->
-    
-    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- React & Babel CDN -->
     <script crossorigin src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/@babel/standalone@7.22.5/babel.min.js"></script>
     
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     
     <script>
         tailwind.config = {
+            darkMode: 'class',
             theme: {
                 extend: {
                     fontFamily: {
                         sans: ['Inter', 'sans-serif'],
                     },
                     colors: {
-                        background: '#0a0e1a',
-                        'on-background': '#e0e8f0',
-                        surface: '#0f1524',
-                        'on-surface': '#e0e8f0',
-                        'on-surface-variant': '#a0b4c4',
-                        primary: '#7dd3fc',
+                        /* Menggunakan CSS Variables untuk mendukung Light/Dark Mode */
+                        background: 'var(--theme-bg)',
+                        'on-background': 'var(--theme-text)',
+                        surface: 'var(--theme-surface)',
+                        'on-surface': 'var(--theme-text)',
+                        'on-surface-variant': 'var(--theme-text-variant)',
+                        primary: 'var(--theme-primary)',
                         'on-primary': '#001f2e',
                         'primary-container': '#0e4d6e',
                         'on-primary-container': '#c8eaff',
@@ -85,21 +45,51 @@
     </script>
     
     <style>
+        /* Definisi Warna Tema Gelap (Default) */
+        :root {
+            --theme-bg: #0a0e1a;
+            --theme-surface: #0f1524;
+            --theme-text: #e0e8f0;
+            --theme-text-variant: #a0b4c4;
+            --theme-primary: #7dd3fc;
+            --theme-glass: rgba(15, 21, 36, 0.6);
+            --theme-glass-elevated: rgba(15, 21, 36, 0.75);
+            --theme-border: rgba(125, 211, 252, 0.1);
+            --theme-border-elevated: rgba(125, 211, 252, 0.15);
+            --theme-nav: rgba(10, 14, 26, 0.6);
+            --theme-nav-mobile: rgba(10, 14, 26, 0.95);
+        }
+
+        /* Definisi Warna Tema Terang (Diperbarui agar kontras & tidak silau) */
+        .light-mode {
+            --theme-bg: #f1f5f9; /* Background abu-abu sangat muda agar tidak menyatu dengan panel putih */
+            --theme-surface: #ffffff;
+            --theme-text: #0f172a;
+            --theme-text-variant: #475569;
+            --theme-primary: #0284c7;
+            --theme-glass: rgba(255, 255, 255, 0.85); /* Panel putih transparan */
+            --theme-glass-elevated: rgba(255, 255, 255, 0.98);
+            --theme-border: rgba(148, 163, 184, 0.35); /* Border abu-abu slate transparan agar kartu terlihat berbingkai jelas */
+            --theme-border-elevated: rgba(148, 163, 184, 0.5);
+            --theme-nav: rgba(241, 245, 249, 0.85);
+            --theme-nav-mobile: rgba(241, 245, 249, 0.98);
+        }
+
         @layer utilities {
             .glass-panel {
-                background: rgba(15, 21, 36, 0.6);
+                background: var(--theme-glass);
                 backdrop-filter: blur(16px);
-                border: 1px solid rgba(125, 211, 252, 0.1);
+                border: 1px solid var(--theme-border);
             }
             
             .glass-panel-elevated {
-                background: rgba(15, 21, 36, 0.75);
+                background: var(--theme-glass-elevated);
                 backdrop-filter: blur(24px);
-                border: 1px solid rgba(125, 211, 252, 0.15);
+                border: 1px solid var(--theme-border-elevated);
             }
 
             .text-gradient {
-                background: linear-gradient(135deg, #7dd3fc 0%, #c8a0f0 100%);
+                background: linear-gradient(135deg, var(--theme-primary) 0%, #c8a0f0 100%);
                 -webkit-background-clip: text;
                 -webkit-text-fill-color: transparent;
             }
@@ -112,8 +102,8 @@
                 align-items: center;
                 justify-content: center;
                 padding: 0.75rem;
-                background: rgba(15, 21, 36, 0.65);
-                border: 1px solid rgba(125, 211, 252, 0.08);
+                background: var(--theme-glass);
+                border: 1px solid var(--theme-border);
                 border-radius: 2rem;
             }
 
@@ -133,17 +123,18 @@
         }
 
         body {
-            background-color: #0a0e1a;
-            color: #e0e8f0;
+            background-color: var(--theme-bg);
+            color: var(--theme-text);
             font-family: 'Inter', sans-serif;
             -webkit-font-smoothing: antialiased;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         ::-webkit-scrollbar {
             width: 8px;
         }
         ::-webkit-scrollbar-track {
-            background: #0a0e1a;
+            background: var(--theme-bg);
         }
         ::-webkit-scrollbar-thumb {
             background: #1e293b;
@@ -180,13 +171,12 @@
     <div id="root"></div>
 
     <script type="text/babel">
-const { useState, useEffect, useMemo } = React;
+        const { useState, useEffect, useMemo, useCallback } = React;
 
         // Image URL helper - supports local paths and Google Drive file IDs
         const DRIVE_IMAGE_URL_BASE = 'https://drive.google.com/uc?id=';
         const DRIVE_IMAGE_MAP = {
             // Replace each placeholder with the actual Google Drive file ID for that image.
-            // Example: 'img/logo/paskaness.png': '1a2b3c4d5e6f7g8h9i0j',
         };
 
         const getDriveUrlFromLink = (url) => {
@@ -230,18 +220,15 @@ const { useState, useEffect, useMemo } = React;
             });
         };
 
-        // Usage: getImageUrl('img/logo/paskaness.png') or getImageUrl('https://drive.google.com/uc?id=FILE_ID')
-        // If you want Drive images, add entries to DRIVE_IMAGE_MAP; otherwise local images still work.
-
         // ============================================================
         // 1. KONFIGURASI UTAMA
         // ============================================================
         const WEBSITE_CONFIG = {
             brandName: 'PASKANESS',
             logoImage: 'logoo/paskaness.svg',
-            imageUrl: '',  // Isi dengan link Drive: https://drive.google.com/uc?id=FILE_ID_DI_SINI
+            imageUrl: '',  
             footerText: '© 2025 PASKANESS. Seluruh hak cipta dilindungi.',
-        };  //https://drive.google.com/file/d/1JF3w9zYa2UKmls9MEBSi525fgMlPcf6q/view?usp=drive_link
+        }; 
 
         const WEBSITE_CONTENT = {
             home: {
@@ -278,6 +265,7 @@ const { useState, useEffect, useMemo } = React;
                     tekpram: 'Tekpram',
                     pemateri: 'Pemateri',
                     juang: 'Juang',
+                    pembina: 'Pembina',
                     
                 }
             }
@@ -287,760 +275,119 @@ const { useState, useEffect, useMemo } = React;
 
         const MEMBERS = [
             // Periode 2025-2026
-            { 
-                id: 'p25-1', 
-                name: 'M.Tamamum Niam', 
-                role: 'Ketua', 
-                period: '2025-2026', 
-                quote: 'Siap memimpin PASKANESS menuju masa depan yang lebih gemilang.', 
-                image: '2026/ketua&wakil/ketua.JPG',
-               
-            },
-            { 
-                id: 'p25-2', 
-                name: 'Revi Anindita Ramadhani', 
-                role: 'Wakil Ketua', 
-                period: '2025-2026', 
-                image: '2026/ketua&wakil/wakil.JPG',
-              
-            },
+            { id: 'p25-1', name: 'M.Tamamum Niam', role: 'Ketua', period: '2025-2026', quote: 'Siap memimpin PASKANESS menuju masa depan yang lebih gemilang.', image: '2026/ketua&wakil/ketua.JPG',},
+            { id: 'p25-2', name: 'Revi Anindita Ramadhani', role: 'Wakil Ketua', period: '2025-2026', quote: 'uigyuyt', image: '2026/ketua&wakil/wakil.JPG',},
             //pemangku Adat
-            { 
-                id: 'p24-3', 
-                name: 'M. Alansyah Mahardika', 
-                role: 'Pemangku Adat 1', 
-                period: '2025-2026', 
-                image: '2026/Pemangku Adat/putik.JPG' 
-            },
-            { 
-                id: 'p24-3', 
-                name: 'Keyko Abinaya', 
-                role: 'Pemangku Adat 1', 
-                period: '2025-2026', 
-                image: '2026/Pemangku Adat/keyko.JPG' 
-            },
-            { 
-                id: 'p24-3', 
-                name: 'M. Kelvan Nurdianto', 
-                role: 'Pemangku Adat 2', 
-                period: '2025-2026', 
-                image: '2026/Pemangku Adat/kelvan.JPG' 
-            },
-            { 
-                id: 'p24-3', 
-                name: 'Adelia Nur Wulan Ramadany', 
-                role: 'Pemangku Adat 2', 
-                period: '2025-2026', 
-                image: '2026/Pemangku Adat/Adel.JPG' 
-            },
-            { 
-                id: 'p24-3', 
-                name: 'Afreza Ridho Ferdian', 
-                role: 'Pemangku Adat 3', 
-                period: '2025-2026', 
-                image: '2026/Pemangku Adat/om.JPG' 
-            },
-            { 
-                id: 'p24-3', 
-                name: 'Putri Rahayu', 
-                role: 'Pemangku Adat 3', 
-                period: '2025-2026', 
-                image: '2026/Pemangku Adat/ketek.JPG' 
-            },
+            { id: 'p24-3', name: 'M. Alansyah Mahardika', role: 'Pemangku Adat 1', period: '2025-2026', image: '2026/Pemangku Adat/putik.JPG' },
+            { id: 'p24-3', name: 'Keyko Abinaya', role: 'Pemangku Adat 1', period: '2025-2026', image: '2026/Pemangku Adat/keyko.JPG' },
+            { id: 'p24-3', name: 'M. Kelvan Nurdianto', role: 'Pemangku Adat 2', period: '2025-2026', image: '2026/Pemangku Adat/kelvan.JPG' },
+            { id: 'p24-3', name: 'Adelia Nur Wulan Ramadany', role: 'Pemangku Adat 2', period: '2025-2026', image: '2026/Pemangku Adat/Adel.JPG' },
+            { id: 'p24-3', name: 'Afreza Ridho Ferdian', role: 'Pemangku Adat 3', period: '2025-2026', image: '2026/Pemangku Adat/om.JPG' },
+            { id: 'p24-3', name: 'Putri Rahayu', role: 'Pemangku Adat 3', period: '2025-2026', image: '2026/Pemangku Adat/ketek.JPG' },
             //kerana dan kerani
-            { 
-                id: 'p25-4', 
-                name: 'M. Alfan Candra', 
-                role: 'Kerana (CO)', 
-                period: '2025-2026', 
-                image: '2026/Kerana&kerani/alfan.JPG' 
-            },
-            { 
-                id: 'p25-5', 
-                name: 'Patis Augusta', 
-                role: 'Kerani (Wakil)', 
-                period: '2025-2026', 
-                image: '2026/Kerana&kerani/tata.JPG' 
-            },
-            { 
-                id: 'p25-4', 
-                name: 'Ihsani Habibullah', 
-                role: 'Kerana', 
-                period: '2025-2026', 
-                image: '2026/Kerana&kerani/ihsan.JPG' 
-            },
-            { 
-                id: 'p25-5', 
-                name: 'Qurin in Sukandi', 
-                role: 'Kerani', 
-                period: '2025-2026', 
-                image: '2026/Kerana&kerani/ayin.JPG' 
-            },
-            { 
-                id: 'p25-4', 
-                name: 'Muhammad Hertanto Putra', 
-                role: 'Kerana', 
-                period: '2025-2026', 
-                image: '2026/Kerana&kerani/putra.JPG' 
-            },
-            { 
-                id: 'p25-5', 
-                name: 'Nadhif haniya madani', 
-                role: 'Kerani', 
-                period: '2025-2026', 
-                image: '2026/Kerana&kerani/haniya.JPG' 
-            },
-            { 
-                id: 'p25-5', 
-                name: 'Naila Cameela', 
-                role: 'Kerani', 
-                period: '2025-2026', 
-                image: '2026/Kerana&kerani/nela.JPG' 
-            },
-
+            { id: 'p25-4', name: 'M. Alfan Candra', role: 'Kerana (CO)', quote: 'hjgewu', period: '2025-2026', image: '2026/Kerana&kerani/alfan.JPG' },
+            { id: 'p25-5', name: 'Patis Augusta', role: 'Kerani (Wakil)', period: '2025-2026', image: '2026/Kerana&kerani/tata.JPG' },
+            { id: 'p25-4', name: 'Ihsani Habibullah', role: 'Kerana', period: '2025-2026', image: '2026/Kerana&kerani/ihsan.JPG' },
+            { id: 'p25-5', name: 'Qurin in Sukandi', role: 'Kerani', period: '2025-2026', image: '2026/Kerana&kerani/ayin.JPG' },
+            { id: 'p25-4', name: 'Muhammad Hertanto Putra', role: 'Kerana', period: '2025-2026', image: '2026/Kerana&kerani/putra.JPG' },
+            { id: 'p25-5', name: 'Nadhif haniya madani', role: 'Kerani', period: '2025-2026', image: '2026/Kerana&kerani/haniya.JPG' },
+            { id: 'p25-5', name: 'Naila Cameela', role: 'Kerani', period: '2025-2026', image: '2026/Kerana&kerani/nela.JPG' },
             //juang
-            { 
-                id: 'p25-6', 
-                name: 'Nasya Fahima Atifa', 
-                role: 'Juang (CO)', 
-                period: '2025-2026', 
-                image: '2026/Juang/nasya.JPG' 
-            },
-            { 
-                id: 'p25-6', 
-                name: 'Afrinda Hanna Farinsia', 
-                role: 'Juang (Wakil)', 
-                period: '2025-2026', 
-                image: '2026/Juang/afrin.JPG' 
-            },
-            { 
-                id: 'p25-6', 
-                name: 'Bimo Cahyo Saputro', 
-                role: 'Juang', 
-                period: '2025-2026', 
-                image: '2026/Juang/bimo.JPG'
-            },
-            { 
-                id: 'p25-6', 
-                name: 'Siti Istianatul Mutafika', 
-                role: 'Juang', 
-                period: '2025-2026', 
-                image: '2026/Juang/fika.JPG'
-            },
-            { 
-                id: 'p25-6', 
-                name: 'Galeh Candra Adi Nugraha', 
-                role: 'Juang', 
-                period: '2025-2026', 
-                image: '2026/Juang/galeh.JPG'
-            },
-            { 
-                id: 'p25-6', 
-                name: 'Adinda Sagita Kirana P', 
-                role: 'Juang', 
-                period: '2025-2026', 
-                image: '2026/Juang/adinda.JPG'
-            },
-
+            { id: 'p25-6', name: 'Nasya Fahima Atifa', role: 'Juang (CO)', period: '2025-2026', image: '2026/Juang/nasya.JPG' },
+            { id: 'p25-6', name: 'Afrinda Hanna Farinsia', role: 'Juang (Wakil)', period: '2025-2026', image: '2026/Juang/afrin.JPG' },
+            { id: 'p25-6', name: 'Bimo Cahyo Saputro', role: 'Juang', period: '2025-2026', image: '2026/Juang/bimo.JPG'},
+            { id: 'p25-6', name: 'Siti Istianatul Mutafika', role: 'Juang', period: '2025-2026', image: '2026/Juang/fika.JPG'},
+            { id: 'p25-6', name: 'Galeh Candra Adi Nugraha', role: 'Juang', period: '2025-2026', image: '2026/Juang/galeh.JPG'},
+            { id: 'p25-6', name: 'Adinda Sagita Kirana P', role: 'Juang', period: '2025-2026', image: '2026/Juang/adinda.JPG'},
             //Litev
-            { 
-                id: 'p24-7', 
-                name: 'Rizky Aditya', 
-                role: 'Litev (CO)', 
-                period: '2025-2026', 
-                image: '2026/litev/kiki.jpg'    
-            },
-            { 
-                id: 'p24-7',  
-                name: 'Firnanda Ayu Sekar Arum', 
-                role: 'Litev (Wakil)', 
-                period: '2025-2026', 
-                image: '2026/litev/nanda.jpg' 
-            },
-            { 
-                id: 'p24-7', 
-                name: 'Rafa Arya Widana', 
-                role: 'Litev', 
-                period: '2025-2026', 
-                image: '2026/litev/rafa.jpg' 
-            },
-            { 
-                id: 'p24-7', 
-                name: 'Aulia Silfi Nurhaliza', 
-                role: 'Litev', 
-                period: '2025-2026', 
-                image: '2026/litev/aulia.jpg' 
-            },
-            { 
-                id: 'p24-7', 
-                name: 'M. Fahrezy Taufiqurrahman', 
-                role: 'Litev', 
-                period: '2025-2026', 
-                image: '2026/litev/fahrezy.jpg' 
-            },
-            { 
-                id: 'p24-7', 
-                name: 'Alifa Annafiuz Zahra', 
-                role: 'Litev', 
-                period: '2025-2026', 
-                image: '2026/litev/alifa.jpg' 
-            },
-            { 
-                id: 'p24-7', 
-                name: 'M. Zaki Pradhanatta', 
-                role: 'Litev', 
-                period: '2025-2026', 
-                image: '2026/litev/zaki.jpg' 
-            },
-            { 
-                id: 'p24-7', 
-                name: 'Anggun Dwi Wijaya', 
-                role: 'Litev', 
-                period: '2025-2026', 
-                image: '2026/litev/anggun.jpg' 
-            },
-            { 
-                id: 'p24-7', 
-                name: 'Alif Adwa Ahza V.A', 
-                role: 'Litev', 
-                period: '2025-2026', 
-                image: '2026/litev/ahza.jpg' 
-            },
-            { 
-                id: 'p24-7', 
-                name: 'Nurul Hidayah Ayni', 
-                role: 'Litev', 
-                period: '2025-2026', 
-                image: '2026/litev/ayni.jpg' 
-            },
-            { 
-                id: 'p24-7', 
-                name: 'Najma Keyla Putri Jasmecha', 
-                role: 'Litev', 
-                period: '2025-2026', 
-                image: '2026/litev/keyla.jpg' 
-            },
-            { 
-                id: 'p24-7', 
-                name: 'Aira Nafa Agustina', 
-                role: 'Litev', 
-                period: '2025-2026', 
-                image: '2026/litev/nafa.jpg' 
-            },
-            { 
-                id: 'p24-7', 
-                name: 'Nayla Cahya Herfynda ', 
-                role: 'Litev', 
-                period: '2025-2026', 
-                image: '2026/litev/nayla.jpg' 
-            },
-            { 
-                id: 'p24-7', 
-                name: 'Nikita Khoirun Nisa', 
-                role: 'Litev', 
-                period: '2025-2026', 
-                image: '2026/litev/nikita.jpg' 
-            },
-            { 
-                id: 'p24-7', 
-                name: 'Mustika Sari', 
-                role: 'Litev', 
-                period: '2025-2026', 
-                image: '2026/litev/mustika.jpg' 
-            },
-            { 
-                id: 'p24-7', 
-                name: 'Widya Aulia Putri', 
-                role: 'Litev', 
-                period: '2025-2026', 
-                image: '2026/litev/widya.jpg' 
-            },
-            
+            { id: 'p24-7', name: 'Rizky Aditya', role: 'Litev (CO)', period: '2025-2026', image: '2026/litev/kiki.jpg' },
+            { id: 'p24-7', name: 'Firnanda Ayu Sekar Arum', role: 'Litev (Wakil)', period: '2025-2026', image: '2026/litev/nanda.jpg' },
+            { id: 'p24-7', name: 'Rafa Arya Widana', role: 'Litev', period: '2025-2026', image: '2026/litev/rafa.jpg' },
+            { id: 'p24-7', name: 'Aulia Silfi Nurhaliza', role: 'Litev', period: '2025-2026', image: '2026/litev/aulia.jpg' },
+            { id: 'p24-7', name: 'M. Fahrezy Taufiqurrahman', role: 'Litev', period: '2025-2026', image: '2026/litev/fahrezy.jpg' },
+            { id: 'p24-7', name: 'Alifa Annafiuz Zahra', role: 'Litev', period: '2025-2026', image: '2026/litev/alifa.jpg' },
+            { id: 'p24-7', name: 'M. Zaki Pradhanatta', role: 'Litev', period: '2025-2026', image: '2026/litev/zaki.jpg' },
+            { id: 'p24-7', name: 'Anggun Dwi Wijaya', role: 'Litev', period: '2025-2026', image: '2026/litev/anggun.jpg' },
+            { id: 'p24-7', name: 'Alif Adwa Ahza V.A', role: 'Litev', period: '2025-2026', image: '2026/litev/ahza.jpg' },
+            { id: 'p24-7', name: 'Nurul Hidayah Ayni', role: 'Litev', period: '2025-2026', image: '2026/litev/ayni.jpg' },
+            { id: 'p24-7', name: 'Najma Keyla Putri Jasmecha', role: 'Litev', period: '2025-2026', image: '2026/litev/keyla.jpg' },
+            { id: 'p24-7', name: 'Aira Nafa Agustina', role: 'Litev', period: '2025-2026', image: '2026/litev/nafa.jpg' },
+            { id: 'p24-7', name: 'Nayla Cahya Herfynda ', role: 'Litev', period: '2025-2026', image: '2026/litev/nayla.jpg' },
+            { id: 'p24-7', name: 'Nikita Khoirun Nisa', role: 'Litev', period: '2025-2026', image: '2026/litev/nikita.jpg' },
+            { id: 'p24-7', name: 'Mustika Sari', role: 'Litev', period: '2025-2026', image: '2026/litev/mustika.jpg' },
+            { id: 'p24-7', name: 'Widya Aulia Putri', role: 'Litev', period: '2025-2026', image: '2026/litev/widya.jpg' },
             //litbang
-            { 
-                id: 'p24-8', 
-                name: 'Eka Putri Ramadhani', 
-                role: 'Litbang (CO)', 
-                period: '2025-2026', 
-                image: '2026/litbang/eka.jpg'
-            },
-            { 
-                id: 'p24-8', 
-                name: 'Rizki Dwi Karina', 
-                role: 'Litbang (Wakil)', 
-                period: '2025-2026', 
-                image: '2026/litbang/rizki.jpg' 
-            },
-            { 
-                id: 'p24-8', 
-                name: 'Anita Nur Laili Agustin', 
-                role: 'Litbang', 
-                period: '2025-2026', 
-                image: '2026/litbang/anita.jpg' 
-            },
-            { 
-                id: 'p24-8', 
-                name: 'Sofia putri Winaya', 
-                role: 'Litbang', 
-                period: '2025-2026', 
-                image: '2026/litbang/sofia.jpg' 
-            },
-            { 
-                id: 'p24-8', 
-                name: 'Niken Widyaningtya', 
-                role: 'Litbang', 
-                period: '2025-2026', 
-                image: '2026/litbang/niken.jpg' 
-            },
-            { 
-                id: 'p24-8', 
-                name: 'Devfi Isabella Dewantari', 
-                role: 'Litbang', 
-                period: '2025-2026', 
-                image: '2026/litbang/devfi.jpg' 
-            },
-            { 
-                id: 'p24-8', 
-                name: 'Naishila Nasya Murtafiah', 
-                role: 'Litbang', 
-                period: '2025-2026', 
-                image: '2026/litbang/naishila.jpg' 
-            },
-            { 
-                id: 'p24-8', 
-                name: 'Alfina Nurun Najwa', 
-                role: 'Litbang', 
-                period: '2025-2026', 
-                image: '2026/litbang/alfina.jpg' 
-            },
-            { 
-                id: 'p24-8', 
-                name: 'Sovi Juanita Rosida', 
-                role: 'Litbang', 
-                period: '2025-2026', 
-                image: '2026/litbang/sofia.jpg' 
-            },
-            { 
-                id: 'p24-8', 
-                name: 'Aulia Syiva Dwi Anggraeni', 
-                role: 'Litbang', 
-                period: '2025-2026', 
-                image: '2026/litbang/aulia.jpg' 
-            },
-            { 
-                id: 'p24-8', 
-                name: 'Aufa Naura Hana', 
-                role: 'Litbang', 
-                period: '2025-2026', 
-                image: '2026/litbang/aufa.jpg' 
-            },
-            { 
-                id: 'p24-8', 
-                name: 'Ceryl Tsabita Aqila Najwa', 
-                role: 'Litbang', 
-                period: '2025-2026', 
-                image: '2026/litbang/ceryl.jpg' 
-            },
-            { 
-                id: 'p24-8', 
-                name: 'alifta Ziatul Mufida', 
-                role: 'Litbang', 
-                period: '2025-2026', 
-                image: '2026/litbang/alifta.jpg' 
-            },
-            { 
-                id: 'p24-8', 
-                name: 'Syafrina Miftakhul Nur Ramadhani', 
-                role: 'Litbang', 
-                period: '2025-2026', 
-                image: '2026/litbang/syafrina.jpg' 
-            },
-            { 
-                id: 'p24-8', 
-                name: 'Shafa Eka Nafista', 
-                role: 'Litbang', 
-                period: '2025-2026', 
-                image: '2026/litbang/shafa.jpg' 
-            },
-            { 
-                id: 'p24-8', 
-                name: 'Nazwa Aurelia Hezar ', 
-                role: 'Litbang', 
-                period: '2025-2026', 
-                image: '2026/litbang/nazwa.jpg' 
-            },
-            { 
-                id: 'p24-8', 
-                name: 'Vannesya Vazilatun Oktavia', 
-                role: 'Litbang', 
-                period: '2025-2026', 
-                image: '2026/litbang/vannesya.jpg' 
-            },
-            { 
-                id: 'p24-8', 
-                name: 'Ihda Arzika Nuril Khoiriyah', 
-                role: 'Litbang', 
-                period: '2025-2026', 
-                image: '2026/litbang/ihda.jpg' 
-            },
-            
+            { id: 'p24-8', name: 'Eka Putri Ramadhani', role: 'Litbang (CO)', period: '2025-2026', image: '2026/litbang/eka.jpg'},
+            { id: 'p24-8', name: 'Rizki Dwi Karina', role: 'Litbang (Wakil)', period: '2025-2026', image: '2026/litbang/rizki.jpg' },
+            { id: 'p24-8', name: 'Anita Nur Laili Agustin', role: 'Litbang', period: '2025-2026', image: '2026/litbang/anita.jpg' },
+            { id: 'p24-8', name: 'Sofia putri Winaya', role: 'Litbang', period: '2025-2026', image: '2026/litbang/sofia.jpg' },
+            { id: 'p24-8', name: 'Niken Widyaningtya', role: 'Litbang', period: '2025-2026', image: '2026/litbang/niken.jpg' },
+            { id: 'p24-8', name: 'Devfi Isabella Dewantari', role: 'Litbang', period: '2025-2026', image: '2026/litbang/devfi.jpg' },
+            { id: 'p24-8', name: 'Naishila Nasya Murtafiah', role: 'Litbang', period: '2025-2026', image: '2026/litbang/naishila.jpg' },
+            { id: 'p24-8', name: 'Alfina Nurun Najwa', role: 'Litbang', period: '2025-2026', image: '2026/litbang/alfina.jpg' },
+            { id: 'p24-8', name: 'Sovi Juanita Rosida', role: 'Litbang', period: '2025-2026', image: '2026/litbang/sofia.jpg' },
+            { id: 'p24-8', name: 'Aulia Syiva Dwi Anggraeni', role: 'Litbang', period: '2025-2026', image: '2026/litbang/aulia.jpg' },
+            { id: 'p24-8', name: 'Aufa Naura Hana', role: 'Litbang', period: '2025-2026', image: '2026/litbang/aufa.jpg' },
+            { id: 'p24-8', name: 'Ceryl Tsabita Aqila Najwa', role: 'Litbang', period: '2025-2026', image: '2026/litbang/ceryl.jpg' },
+            { id: 'p24-8', name: 'alifta Ziatul Mufida', role: 'Litbang', period: '2025-2026', image: '2026/litbang/alifta.jpg' },
+            { id: 'p24-8', name: 'Syafrina Miftakhul Nur Ramadhani', role: 'Litbang', period: '2025-2026', image: '2026/litbang/syafrina.jpg' },
+            { id: 'p24-8', name: 'Shafa Eka Nafista', role: 'Litbang', period: '2025-2026', image: '2026/litbang/shafa.jpg' },
+            { id: 'p24-8', name: 'Nazwa Aurelia Hezar ', role: 'Litbang', period: '2025-2026', image: '2026/litbang/nazwa.jpg' },
+            { id: 'p24-8', name: 'Vannesya Vazilatun Oktavia', role: 'Litbang', period: '2025-2026', image: '2026/litbang/vannesya.jpg' },
+            { id: 'p24-8', name: 'Ihda Arzika Nuril Khoiriyah', role: 'Litbang', period: '2025-2026', image: '2026/litbang/ihda.jpg' },
             //tekpram
-            { 
-                id: 'p24-9', 
-                name: 'Rifatulloh Ahmad Alfarisyi', 
-                role: 'Tekpram (CO)', 
-                period: '2025-2026', 
-                image: '2026/tekpram/rafi.jpg' 
-            },
-            { 
-                id: 'p24-9', 
-                name: 'Dita Permata Sari', 
-                role: 'Tekpram (Wakil)', 
-                period: '2025-2026', 
-                image: '2026/tekpram/dita.jpg' 
-            },
-            { 
-                id: 'p24-9', 
-                name: 'A. Nabil P.A', 
-                role: 'Tekpram', 
-                period: '2025-2026', 
-                image: '2026/tekpram/nabil.jpg' 
-            },
-            { 
-                id: 'p24-9', 
-                name: 'Ghaitsa Zahratul faikha', 
-                role: 'Tekpram', 
-                period: '2025-2026', 
-                image: '2026/tekpram/ghaitsa.jpg' 
-            },
-            { 
-                id: 'p24-9', 
-                name: 'M. Haidar S', 
-                role: 'Tekpram', 
-                period: '2025-2026', 
-                image: '2026/tekpram/haidar.jpg' 
-            },
-            { 
-                id: 'p24-9', 
-                name: 'Syifa Nur Atiqoh', 
-                role: 'Tekpram', 
-                period: '2025-2026', 
-                image: '2026/tekpram/syifa.jpg' 
-            },
-            { 
-                id: 'p24-9', 
-                name: 'Navy Ardiananta', 
-                role: 'Tekpram', 
-                period: '2025-2026', 
-                image: '2026/tekpram/navy.jpg' 
-            },
-            { 
-                id: 'p24-9', 
-                name: 'Aswani Widya Ardiningrum', 
-                role: 'Tekpram', 
-                period: '2025-2026', 
-                image: '2026/tekpram/aswani.jpg' 
-            },
-            { 
-                id: 'p24-9', 
-                name: 'Dharma Maheswara', 
-                role: 'Tekpram',
-                period: '2025-2026', 
-                image: '2026/tekpram/dharma.jpg' 
-            },
-            { 
-                id: 'p24-9', 
-                name: 'Erlambang', 
-                role: 'Tekpram', 
-                period: '2025-2026', 
-                image: '2026/tekpram/erlambang.jpg' 
-            },
-            { 
-                id: 'p24-9', 
-                name: 'Zakyatul Afifah F', 
-                role: 'Tekpram', 
-                period: '2025-2026', 
-                image: '2026/tekpram/zakyatul.jpg' 
-            },
-            
+            { id: 'p24-9', name: 'Rifatulloh Ahmad Alfarisyi', role: 'Tekpram (CO)', period: '2025-2026', image: '2026/tekpram/rafi.jpg' },
+            { id: 'p24-9', name: 'Dita Permata Sari', role: 'Tekpram (Wakil)', period: '2025-2026', image: '2026/tekpram/dita.jpg' },
+            { id: 'p24-9', name: 'A. Nabil P.A', role: 'Tekpram', period: '2025-2026', image: '2026/tekpram/nabil.jpg' },
+            { id: 'p24-9', name: 'Ghaitsa Zahratul faikha', role: 'Tekpram', period: '2025-2026', image: '2026/tekpram/ghaitsa.jpg' },
+            { id: 'p24-9', name: 'M. Haidar S', role: 'Tekpram', period: '2025-2026', image: '2026/tekpram/haidar.jpg' },
+            { id: 'p24-9', name: 'Syifa Nur Atiqoh', role: 'Tekpram', period: '2025-2026', image: '2026/tekpram/syifa.jpg' },
+            { id: 'p24-9', name: 'Navy Ardiananta', role: 'Tekpram', period: '2025-2026', image: '2026/tekpram/navy.jpg' },
+            { id: 'p24-9', name: 'Aswani Widya Ardiningrum', role: 'Tekpram', period: '2025-2026', image: '2026/tekpram/aswani.jpg' },
+            { id: 'p24-9', name: 'Dharma Maheswara', role: 'Tekpram', period: '2025-2026', image: '2026/tekpram/dharma.jpg' },
+            { id: 'p24-9', name: 'Erlambang', role: 'Tekpram', period: '2025-2026', image: '2026/tekpram/erlambang.jpg' },
+            { id: 'p24-9', name: 'Zakyatul Afifah F', role: 'Tekpram', period: '2025-2026', image: '2026/tekpram/zakyatul.jpg' },
             //pemateri
-            { 
-                id: 'p24-10', 
-                name: 'Sofie Ajeng R ', 
-                role: 'Pemateri (CO)', 
-                period: '2025-2026', 
-                image: '2026/pemateri/sofie.jpg' 
-            },
-            { 
-                id: 'p24-10', 
-                name: 'Adhy Dhamar Rahmadan ', 
-                role: 'Pemateri (Wakil)', 
-                period: '2025-2026', 
-                image: '2026/pemateri/adhy.jpg' 
-            },
-            { 
-                id: 'p24-10', 
-                name: 'Intan Nadya Fuzy  ', 
-                role: 'Pemateri', 
-                period: '2025-2026', 
-                image: '2026/pemateri/intan.jpg' 
-            },
-            { 
-                id: 'p24-10', 
-                name: 'M. Mahfud Angga A ', 
-                role: 'Pemateri', 
-                period: '2025-2026', 
-                image: '2026/pemateri/angga.jpg' 
-            },
-            { 
-                id: 'p24-10', 
-                name: 'Alya Rahma ', 
-                role: 'Pemateri', 
-                period: '2025-2026', 
-                image: '2026/pemateri/alya.jpg' 
-            },
-            { 
-                id: 'p24-10', 
-                name: 'Satria Adiya P ', 
-                role: 'Pemateri', 
-                period: '2025-2026', 
-                image: '2026/pemateri/satria.jpg' 
-            },
-            { 
-                id: 'p24-10', 
-                name: 'Amelia putri', 
-                role: 'Pemateri', 
-                period: '2025-2026', 
-                image: '2026/pemateri/amelia.jpg' 
-            },
-            { 
-                id: 'p24-10', 
-                name: 'Reyvalino yansa ', 
-                role: 'Pemateri', 
-                period: '2025-2026', 
-                image: '2026/pemateri/reyvalino.jpg' 
-            },
-            { 
-                id: 'p24-10', 
-                name: 'Julia Stina Sari ', 
-                role: 'Pemateri', 
-                period: '2025-2026', 
-                image: '2026/pemateri/julia.jpg' 
-            },
-            { 
-                id: 'p24-10', 
-                name: 'Wahyu Febrianto', 
-                role: 'Pemateri', 
-                period: '2025-2026', 
-                image: '2026/pemateri/wahyu.jpg' 
-            },
-            { 
-                id: 'p24-10', 
-                name: 'Safinatun Naja', 
-                role: 'Pemateri', 
-                period: '2025-2026', 
-                image: '2026/pemateri/safinatun.jpg' 
-            },
-            { 
-                id: 'p24-10', 
-                name: 'M. Fairuz Akbar', 
-                role: 'Pemateri', 
-                period: '2025-2026', 
-                image: '2026/pemateri/akbar.jpg' 
-            },
-            {
-                id: 'p24-10', 
-                name: 'Ellena Alifi', 
-                role: 'Pemateri', 
-                period: '2025-2026', 
-                image: '2026/pemateri/ellena.jpg' 
-            },
-            { 
-                id: 'p24-10', 
-                name: 'Daffa Wahyu ', 
-                role: 'Pemateri', 
-                period: '2025-2026', 
-                image: '2026/pemateri/daffa.jpg' 
-            },
-            { 
-                id: 'p24-10', 
-                name: 'Sherly Nur Arisnawati ', 
-                role: 'Pemateri', 
-                period: '2025-2026', 
-                image: '2026/pemateri/sherly.jpg' 
-            },
-            { 
-                id: 'p24-10', 
-                name: 'M. Reza Apriliawan ', 
-                role: 'Pemateri', 
-                period: '2025-2026', 
-                image: '2026/pemateri/reza.jpg' 
-            },
-            { 
-                id: 'p24-10', 
-                name: 'Lola Susmiasari', 
-                role: 'Pemateri', 
-                period: '2025-2026', 
-                image: '2026/pemateri/lola.jpg' 
-            },
-            { 
-                id: 'p24-10', 
-                name: 'M. Afrizal Amiruddin', 
-                role: 'Pemateri', 
-                period: '2025-2026', 
-                image: '2026/pemateri/rizal.jpg' 
-            },
-            { 
-                id: 'p24-10', 
-                name: 'Zaskia Aulia Putri', 
-                role: 'Pemateri', 
-                period: '2025-2026', 
-                image: '2026/pemateri/zaskia.jpg' 
-            },
-            { 
-                id: 'p24-10', 
-                name: 'jesika Aulia putri', 
-                role: 'Pemateri', 
-                period: '2025-2026', 
-                image: '2026/pemateri/jesika.jpg' 
-            },
-            { 
-                id: 'p24-10', 
-                name: 'Alviana Laila', 
-                role: 'Pemateri', 
-                period: '2025-2026', 
-                image: '2026/pemateri/alviana.jpg' 
-            },
-            { 
-                id: 'p24-10', 
-                name: 'Aulia dinda nur', 
-                role: 'Pemateri', 
-                period: '2025-2026', 
-                image: '2026/pemateri/aulia.jpg' 
-            },
-            { 
-                id: 'p24-10', 
-                name: 'Hany Aryanti Dwi', 
-                role: 'Pemateri', 
-                period: '2025-2026', 
-                image: '2026/pemateri/hany.jpg' 
-            },
-            { 
-                id: 'p24-10', 
-                name: 'Neisa Nur Aidzi', 
-                role: 'Pemateri', 
-                period: '2025-2026', 
-                image: '2026/pemateri/neisa.jpg' 
-            },
-            { 
-                id: 'p24-10', 
-                name: 'Shofia Sabrina', 
-                role: 'Pemateri', 
-                period: '2025-2026', 
-                image: '2026/pemateri/shofia.jpg' 
-            },
-            { 
-                id: 'p24-10', 
-                name: 'Shyrena Icha', 
-                role: 'Pemateri', 
-                period: '2025-2026', 
-                image: '2026/pemateri/shyrena.jpg' 
-            },
-            { 
-                id: 'p24-10', 
-                name: 'Neiza Indra Pratama', 
-                role: 'Pemateri', 
-                period: '2025-2026', 
-                image: '2026/pemateri/neiza.jpg' 
-            },
-            { 
-                id: 'p24-10', 
-                name: 'Cahya Dwi Lestari', 
-                role: 'Pemateri', 
-                period: '2025-2026', 
-                image: '2026/pemateri/cahya.jpg' 
-            },
-            { 
-                id: 'p24-10', 
-                name: 'Mutiara Ramadhani', 
-                role: 'Pemateri', 
-                period: '2025-2026', 
-                image: '2026/pemateri/mutiara.jpg' 
-            },
-            { 
-                id: 'p24-10', 
-                name: 'Nayla Salsabila', 
-                role: 'Pemateri', 
-                period: '2025-2026', 
-                image: '2026/pemateri/nayla.jpg' 
-            },
-            { 
-                id: 'p24-10', 
-                name: 'Fadhila Rahma Hanum', 
-                role: 'Pemateri', 
-                period: '2025-2026', 
-                image: '2026/pemateri/fadhila.jpg' 
-            },
-            { 
-                id: 'p24-10', 
-                name: 'Sabrina Maulani', 
-                role: 'Pemateri', 
-                period: '2025-2026', 
-                image: '2026/pemateri/sabrina.jpg' 
-            },
-            { 
-                id: 'p24-10', 
-                name: 'Naura Anggun', 
-                role: 'Pemateri', 
-                period: '2025-2026', 
-                image: '2026/pemateri/naura.jpg' 
-            },
-            { 
-                id: 'p24-10', 
-                name: 'Khanza Aura ', 
-                role: 'Pemateri', 
-                period: '2025-2026', 
-                image: '2026/pemateri/khanza.jpg' 
-            },
-            { 
-                id: 'p24-10', 
-                name: 'Raviva gaizhani', 
-                role: 'Pemateri', 
-                period: '2025-2026', 
-                image: '2026/pemateri/raviva.jpg' 
-            },
-            { 
-                id: 'p24-10', 
-                name: 'Nabila Leni', 
-                role: 'Pemateri', 
-                period: '2025-2026', 
-                image: '2026/pemateri/nabilla.jpg' 
-            },
-            { 
-                id: 'p24-10', 
-                name: 'Anindyta Rahma', 
-                role: 'Pemateri', 
-                period: '2025-2026', 
-                image: '2026/pemateri/anindyta.jpg' 
-            },
-            { 
-                id: 'p24-10', 
-                name: 'Naswa Bilqis', 
-                role: 'Pemateri', 
-                period: '2025-2026', 
-                image: '2026/pemateri/naswa.jpg' 
-            },
-            { 
-                id: 'p24-10', 
-                name: 'Mei Alifvia', 
-                role: 'Pemateri', 
-                period: '2025-2026', 
-                image: '2026/pemateri/mei.jpg' 
-            },
-            
+            { id: 'p24-10', name: 'Sofie Ajeng R ', role: 'Pemateri (CO)', period: '2025-2026', image: '2026/pemateri/sofie.jpg' },
+            { id: 'p24-10', name: 'Adhy Dhamar Rahmadan ', role: 'Pemateri (Wakil)', period: '2025-2026', image: '2026/pemateri/adhy.jpg' },
+            { id: 'p24-10', name: 'Intan Nadya Fuzy  ', role: 'Pemateri', period: '2025-2026', image: '2026/pemateri/intan.jpg' },
+            { id: 'p24-10', name: 'M. Mahfud Angga A ', role: 'Pemateri', period: '2025-2026', image: '2026/pemateri/angga.jpg' },
+            { id: 'p24-10', name: 'Alya Rahma ', role: 'Pemateri', period: '2025-2026', image: '2026/pemateri/alya.jpg' },
+            { id: 'p24-10', name: 'Satria Adiya P ', role: 'Pemateri', period: '2025-2026', image: '2026/pemateri/satria.jpg' },
+            { id: 'p24-10', name: 'Amelia putri', role: 'Pemateri', period: '2025-2026', image: '2026/pemateri/amelia.jpg' },
+            { id: 'p24-10', name: 'Reyvalino yansa ', role: 'Pemateri', period: '2025-2026', image: '2026/pemateri/reyvalino.jpg' },
+            { id: 'p24-10', name: 'Julia Stina Sari ', role: 'Pemateri', period: '2025-2026', image: '2026/pemateri/julia.jpg' },
+            { id: 'p24-10', name: 'Wahyu Febrianto', role: 'Pemateri', period: '2025-2026', image: '2026/pemateri/wahyu.jpg' },
+            { id: 'p24-10', name: 'Safinatun Naja', role: 'Pemateri', period: '2025-2026', image: '2026/pemateri/safinatun.jpg' },
+            { id: 'p24-10', name: 'M. Fairuz Akbar', role: 'Pemateri', period: '2025-2026', image: '2026/pemateri/akbar.jpg' },
+            { id: 'p24-10', name: 'Ellena Alifi', role: 'Pemateri', period: '2025-2026', image: '2026/pemateri/ellena.jpg' },
+            { id: 'p24-10', name: 'Daffa Wahyu ', role: 'Pemateri', period: '2025-2026', image: '2026/pemateri/daffa.jpg' },
+            { id: 'p24-10', name: 'Sherly Nur Arisnawati ', role: 'Pemateri', period: '2025-2026', image: '2026/pemateri/sherly.jpg' },
+            { id: 'p24-10', name: 'M. Reza Apriliawan ', role: 'Pemateri', period: '2025-2026', image: '2026/pemateri/reza.jpg' },
+            { id: 'p24-10', name: 'Lola Susmiasari', role: 'Pemateri', period: '2025-2026', image: '2026/pemateri/lola.jpg' },
+            { id: 'p24-10', name: 'M. Afrizal Amiruddin', role: 'Pemateri', period: '2025-2026', image: '2026/pemateri/rizal.jpg' },
+            { id: 'p24-10', name: 'Zaskia Aulia Putri', role: 'Pemateri', period: '2025-2026', image: '2026/pemateri/zaskia.jpg' },
+            { id: 'p24-10', name: 'jesika Aulia putri', role: 'Pemateri', period: '2025-2026', image: '2026/pemateri/jesika.jpg' },
+            { id: 'p24-10', name: 'Alviana Laila', role: 'Pemateri', period: '2025-2026', image: '2026/pemateri/alviana.jpg' },
+            { id: 'p24-10', name: 'Aulia dinda nur', role: 'Pemateri', period: '2025-2026', image: '2026/pemateri/aulia.jpg' },
+            { id: 'p24-10', name: 'Hany Aryanti Dwi', role: 'Pemateri', period: '2025-2026', image: '2026/pemateri/hany.jpg' },
+            { id: 'p24-10', name: 'Neisa Nur Aidzi', role: 'Pemateri', period: '2025-2026', image: '2026/pemateri/neisa.jpg' },
+            { id: 'p24-10', name: 'Shofia Sabrina', role: 'Pemateri', period: '2025-2026', image: '2026/pemateri/shofia.jpg' },
+            { id: 'p24-10', name: 'Shyrena Icha', role: 'Pemateri', period: '2025-2026', image: '2026/pemateri/shyrena.jpg' },
+            { id: 'p24-10', name: 'Neiza Indra Pratama', role: 'Pemateri', period: '2025-2026', image: '2026/pemateri/neiza.jpg' },
+            { id: 'p24-10', name: 'Cahya Dwi Lestari', role: 'Pemateri', period: '2025-2026', image: '2026/pemateri/cahya.jpg' },
+            { id: 'p24-10', name: 'Mutiara Ramadhani', role: 'Pemateri', period: '2025-2026', image: '2026/pemateri/mutiara.jpg' },
+            { id: 'p24-10', name: 'Nayla Salsabila', role: 'Pemateri', period: '2025-2026', image: '2026/pemateri/nayla.jpg' },
+            { id: 'p24-10', name: 'Fadhila Rahma Hanum', role: 'Pemateri', period: '2025-2026', image: '2026/pemateri/fadhila.jpg' },
+            { id: 'p24-10', name: 'Sabrina Maulani', role: 'Pemateri', period: '2025-2026', image: '2026/pemateri/sabrina.jpg' },
+            { id: 'p24-10', name: 'Naura Anggun', role: 'Pemateri', period: '2025-2026', image: '2026/pemateri/naura.jpg' },
+            { id: 'p24-10', name: 'Khanza Aura ', role: 'Pemateri', period: '2025-2026', image: '2026/pemateri/khanza.jpg' },
+            { id: 'p24-10', name: 'Raviva gaizhani', role: 'Pemateri', period: '2025-2026', image: '2026/pemateri/raviva.jpg' },
+            { id: 'p24-10', name: 'Nabila Leni', role: 'Pemateri', period: '2025-2026', image: '2026/pemateri/nabilla.jpg' },
+            { id: 'p24-10', name: 'Anindyta Rahma', role: 'Pemateri', period: '2025-2026', image: '2026/pemateri/anindyta.jpg' },
+            { id: 'p24-10', name: 'Naswa Bilqis', role: 'Pemateri', period: '2025-2026', image: '2026/pemateri/naswa.jpg' },
+            { id: 'p24-10', name: 'Mei Alifvia', role: 'Pemateri', period: '2025-2026', image: '2026/pemateri/mei.jpg' },
             // Periode 2026-2027
-
-
         ];
 
         const ACTIVITIES = [
@@ -1050,13 +397,12 @@ const { useState, useEffect, useMemo } = React;
                 date: '30-31 Agustus 2025', 
                 description: 'Menjelajahi masa depan teknologi dengan para ahli industri dalam sesi diskusi panel yang mendalam.', 
                 image: 'thumbnail/ptp.jpg',
-                imageUrl: '',  // Isi: https://drive.google.com/uc?id=FILE_ID
+                imageUrl: '', 
                 location: 'SMAN 1 Sumberrejo', 
                 status: 'Terlaksana', 
                 category: 'sosial',
                 likes: 0,
                 documentation: [
-                    // ARAHAN: Untuk mengubah link Foto Dokumentasi kegiatan ini, ganti URL di bawah ini
                     { title: 'Foto Dokumentasi', link: 'https://drive.google.com/drive/folders/1e25b7WyNHz4b65EkHeRyHuAWCYS-htMm' }
                 ]
             },
@@ -1066,13 +412,12 @@ const { useState, useEffect, useMemo } = React;
                 date: '24 Oktober 2025', 
                 description: 'Sesi kolaboratif untuk mengasah keterampilan desain dan pemikiran kreatif bagi seluruh anggota.', 
                 image: 'thumbnail/pionering.jpg',
-                imageUrl: '',  // Isi: https://drive.google.com/uc?id=FILE_ID
+                imageUrl: '', 
                 location: 'SMAN 1 Sumberrejo', 
                 status: 'Terlaksana', 
                 category: 'Edukasi',
                 likes: 0,
                 documentation: [
-                    // ARAHAN: Untuk mengubah link Foto Dokumentasi kegiatan ini, ganti URL di bawah ini
                     { title: 'Foto Dokumentasi', link: 'https://drive.google.com/drive/folders/1mTdvi-SOMLEzwTCM48cEvhX0YNCkqQnE' }
                 ]
             },
@@ -1082,13 +427,12 @@ const { useState, useEffect, useMemo } = React;
                 date: '3 Maret 2026', 
                 description: 'Perayaan pencapaian kita sepanjang tahun dalam suasana formal yang hangat dan penuh kebersamaan.', 
                 image: 'thumbnail/bukber.jpg',
-                imageUrl: '',  // Isi: https://drive.google.com/uc?id=FILE_ID
+                imageUrl: '', 
                 location: 'Aula, SMAN 1 Sumberrejo', 
                 status: 'Terlaksana', 
                 category: 'Sosial',
                 likes: 0,
                 documentation: [
-                    // ARAHAN: Untuk mengubah link Foto Dokumentasi kegiatan ini, ganti URL di bawah ini
                     { title: 'Foto Dokumentasi', link: 'https://drive.google.com/drive/folders/1VGtK4hMpA7rvcBVDpn7nbDRdQM2t3J6T' }
                 ]
             }
@@ -1097,46 +441,101 @@ const { useState, useEffect, useMemo } = React;
         const PAST_COLLECTIONS = [
             { 
                 id: 'past-1', 
-                title: 'Ekspedisi Budaya 2022', 
-                category: 'Budaya', 
+                title: 'Jota Joti', 
+                category: 'Sosial', 
                 image: './img/past/thumbnail1.jpg',
-                imageUrl: '',  // Isi: https://drive.google.com/uc?id=FILE_ID
+                imageUrl: '', 
                 description: 'Perjalanan mendokumentasikan kearifan lokal di berbagai daerah.',
                 likes: 0,
                 documentation: [
-                    // ARAHAN: Untuk mengubah link Foto Dokumentasi kegiatan ini, ganti path di bawah ini
                     { title: 'Foto Dokumentasi', link: './docs/past1/' }
                 ]
             },
             { 
                 id: 'past-2', 
-                title: 'Pameran Seni Digital', 
-                category: 'Seni', 
+                title: 'Bukber kwarcab', 
+                category: 'Sosial', 
                 image: './img/past/thumbnail2.jpg',
-                imageUrl: '',  // Isi: https://drive.google.com/uc?id=FILE_ID
+                imageUrl: '', 
                 description: 'Menampilkan karya-karya terbaik dari komunitas lokal.',
                 likes: 0,
                 documentation: [
-                    // ARAHAN: Untuk mengubah link Foto Dokumentasi kegiatan ini, ganti path di bawah ini
                     { title: 'Foto Dokumentasi', link: './docs/past2/' }
                 ]
             },
             { 
                 id: 'past-3', 
-                title: 'Aksi Hijau PASKANESS', 
+                title: 'Aksi Iklim', 
                 category: 'Lingkungan', 
                 image: './img/past/thumbnail3.jpg',
-                imageUrl: '',  // Isi: https://drive.google.com/uc?id=FILE_ID
+                imageUrl: '', 
                 description: 'Program penanaman pohon dan edukasi lingkungan.',
                 likes: 0,
                 documentation: [
-                    // ARAHAN: Untuk mengubah link Foto Dokumentasi kegiatan ini, ganti path di bawah ini
                     { title: 'Foto Dokumentasi', link: './docs/past3/' }
                 ]
             }
         ];
 
         normalizeImageSources();
+
+        // --- Custom hook for likes ---
+        const useLikes = () => {
+            const [userLikes, setUserLikes] = useState(() => {
+                const saved = localStorage.getItem('paskanessUserLikes');
+                return saved ? new Set(JSON.parse(saved)) : new Set();
+            });
+            const [totalLikes, setTotalLikes] = useState(() => {
+                const saved = localStorage.getItem('paskanessTotalLikes');
+                return saved ? JSON.parse(saved) : {};
+            });
+
+            useEffect(() => {
+                const oldLikes = localStorage.getItem('paskanessActivityLikes');
+                if (oldLikes) {
+                    try {
+                        const parsed = JSON.parse(oldLikes);
+                        const newTotal = { ...totalLikes, ...parsed };
+                        const newUser = new Set(userLikes);
+                        Object.keys(parsed).forEach(id => {
+                            if (parsed[id] > 0) newUser.add(id);
+                        });
+                        setTotalLikes(newTotal);
+                        setUserLikes(newUser);
+                        localStorage.setItem('paskanessUserLikes', JSON.stringify(Array.from(newUser)));
+                        localStorage.setItem('paskanessTotalLikes', JSON.stringify(newTotal));
+                        localStorage.removeItem('paskanessActivityLikes');
+                    } catch (e) {
+                        console.warn('Migration failed:', e);
+                    }
+                }
+            }, []);
+
+            const handleLike = useCallback((activityId, e) => {
+                if(e) e.stopPropagation();
+                const newUserLikes = new Set(userLikes);
+                const currentTotal = totalLikes[activityId] || 0;
+                let newTotalLikes = { ...totalLikes };
+
+                if (newUserLikes.has(activityId)) {
+                    newUserLikes.delete(activityId);
+                    newTotalLikes[activityId] = Math.max(0, currentTotal - 1);
+                } else {
+                    newUserLikes.add(activityId);
+                    newTotalLikes[activityId] = currentTotal + 1;
+                }
+
+                setUserLikes(newUserLikes);
+                setTotalLikes(newTotalLikes);
+                localStorage.setItem('paskanessUserLikes', JSON.stringify(Array.from(newUserLikes)));
+                localStorage.setItem('paskanessTotalLikes', JSON.stringify(newTotalLikes));
+            }, [userLikes, totalLikes]);
+
+            const hasUserLiked = useCallback((activityId) => userLikes.has(activityId), [userLikes]);
+            const getTotalLikes = useCallback((activityId) => totalLikes[activityId] || 0, [totalLikes]);
+
+            return { handleLike, hasUserLiked, getTotalLikes };
+        };
 
         // --- Components ---
 
@@ -1147,13 +546,13 @@ const { useState, useEffect, useMemo } = React;
             return <i data-lucide={name} className={className}></i>;
         };
 
-        const Navbar = ({ activeTab, setActiveTab }) => {
+        const Navbar = ({ activeTab, setActiveTab, isLightMode, toggleTheme }) => {
             const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
             return (
-                <nav className="fixed top-0 w-full z-50 bg-[#0a0e1a]/60 backdrop-blur-lg border-b border-sky-400/10">
+                <nav className="fixed top-0 w-full z-50 bg-[var(--theme-nav)] backdrop-blur-lg border-b border-sky-400/10 transition-colors duration-300">
                     <div className="flex justify-between items-center px-8 py-4 max-w-7xl mx-auto">
-                        <div className="text-2xl font-semibold text-sky-300 tracking-wider">
+                        <div className="text-2xl font-semibold text-primary tracking-wider">
                             {WEBSITE_CONFIG.brandName}
                         </div>
                         {/* Desktop Menu */}
@@ -1164,28 +563,38 @@ const { useState, useEffect, useMemo } = React;
                                     { id: 'structure', label: 'Struktur Pengurus', icon: 'users' },
                                 ].map((tab) => (
                                     <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                                       className={`transition-colors duration-300 px-2 py-1 rounded relative ${
-                                           activeTab === tab.id ? "text-sky-300" : "text-slate-300 hover:text-sky-200 hover:bg-sky-400/10"
-                                       }`}>
+                                        className={`transition-colors duration-300 px-2 py-1 rounded relative ${
+                                            activeTab === tab.id ? "text-primary" : "text-on-surface-variant hover:text-primary hover:bg-sky-400/10"
+                                        }`}>
                                         <i data-lucide={tab.icon} className="w-4 h-4 inline mr-1"></i>
                                         {tab.label}
                                         {activeTab === tab.id && (
-                                            <div className="absolute -bottom-4 left-0 right-0 h-0.5 bg-sky-300"></div>
+                                            <div className="absolute -bottom-4 left-0 right-0 h-0.5 bg-primary"></div>
                                         )}
                                     </button>
                                 ))}
+                                
+                                {/* Theme Toggle Desktop */}
+                                <button onClick={toggleTheme} className="ml-4 p-2 text-on-surface-variant hover:text-primary transition-colors rounded-full glass-panel flex items-center justify-center">
+                                    <Icon name={isLightMode ? "moon" : "sun"} className="w-4 h-4" />
+                                </button>
                         </div>
-                        {/* Mobile Menu Button */}
-                        <button 
-                            className="md:hidden text-slate-300 hover:text-sky-300 transition-colors"
-                            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                        >
-                            <Icon name={isMobileMenuOpen ? "x" : "menu"} className="w-6 h-6" />
-                        </button>
+                        {/* Mobile Menu Buttons */}
+                        <div className="md:hidden flex items-center gap-4">
+                            <button onClick={toggleTheme} className="p-2 text-on-surface-variant hover:text-primary transition-colors rounded-full glass-panel flex items-center justify-center">
+                                <Icon name={isLightMode ? "moon" : "sun"} className="w-4 h-4" />
+                            </button>
+                            <button 
+                                className="text-on-surface-variant hover:text-primary transition-colors"
+                                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                            >
+                                <Icon name={isMobileMenuOpen ? "x" : "menu"} className="w-6 h-6" />
+                            </button>
+                        </div>
                     </div>
                     {/* Mobile Menu */}
                     {isMobileMenuOpen && (
-                        <div className="md:hidden bg-[#0a0e1a]/95 backdrop-blur-lg border-t border-sky-400/10">
+                        <div className="md:hidden bg-[var(--theme-nav-mobile)] backdrop-blur-lg border-t border-sky-400/10 transition-colors duration-300">
                             <div className="px-8 py-4 space-y-4">
                                 {[
                                     { id: 'home', label: 'Beranda', icon: 'home' },
@@ -1198,7 +607,7 @@ const { useState, useEffect, useMemo } = React;
                                             setIsMobileMenuOpen(false);
                                         }}
                                         className={`flex items-center gap-3 w-full text-left px-4 py-3 rounded-lg transition-colors ${
-                                            activeTab === tab.id ? "bg-sky-400/20 text-sky-300" : "text-slate-300 hover:text-sky-200 hover:bg-sky-400/10"
+                                            activeTab === tab.id ? "bg-primary/20 text-primary" : "text-on-surface-variant hover:text-primary hover:bg-primary/10"
                                         }`}
                                     >
                                         <Icon name={tab.icon} className="w-5 h-5" />
@@ -1213,16 +622,16 @@ const { useState, useEffect, useMemo } = React;
         };
 
         const Footer = () => (
-            <footer className="bg-[#0a0e1a] w-full py-12 border-t border-sky-400/10 mt-20">
+            <footer className="bg-background w-full py-12 border-t border-sky-400/10 mt-20 transition-colors duration-300">
                 <div className="flex flex-col md:flex-row justify-between items-center px-8 max-w-7xl mx-auto text-center md:text-left">
                     <div className="mb-8 md:mb-0">
-                        <div className="text-xl font-bold text-sky-300 mb-2">{WEBSITE_CONFIG.brandName}</div>
-                        <p className="text-slate-400 text-sm">{WEBSITE_CONFIG.footerText}</p>
+                        <div className="text-xl font-bold text-primary mb-2">{WEBSITE_CONFIG.brandName}</div>
+                        <p className="text-on-surface-variant text-sm">{WEBSITE_CONFIG.footerText}</p>
                     </div>
                     <div className="flex flex-wrap justify-center gap-8 text-sm">
-                        <a className="text-slate-400 hover:text-sky-300 transition-colors" href="#">Kebijakan Privasi</a>
-                        <a className="text-slate-400 hover:text-sky-300 transition-colors" href="#">Syarat & Ketentuan</a>
-                        <a className="text-slate-400 hover:text-sky-300 transition-colors" href="#">Kreator 2026 by M. Alfan</a>
+                        <a className="text-on-surface-variant hover:text-primary transition-colors" href="#">Kebijakan Privasi</a>
+                        <a className="text-on-surface-variant hover:text-primary transition-colors" href="#">Syarat & Ketentuan</a>
+                        <a className="text-on-surface-variant hover:text-primary transition-colors" href="#">Kreator 2026 by M. Alfan</a>
                     </div>
                     <div className="flex gap-4 mt-8 md:mt-0">
                         <div className="w-10 h-10 glass-panel rounded-full flex items-center justify-center cursor-pointer hover:text-primary transition-colors">
@@ -1242,7 +651,7 @@ const { useState, useEffect, useMemo } = React;
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8">
                     <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={onClose}></div>
                     <div className="glass-panel-elevated w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl relative z-10 animate-in fade-in zoom-in duration-300">
-                        <button onClick={onClose} className="absolute top-6 right-6 p-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors z-20">
+                        <button onClick={onClose} className="absolute top-6 right-6 p-2 rounded-full bg-black/10 hover:bg-black/20 dark:bg-white/5 dark:hover:bg-white/10 transition-colors z-20">
                             <Icon name="x" className="w-6 h-6" />
                         </button>
                         <div className="flex flex-col md:flex-row">
@@ -1256,7 +665,7 @@ const { useState, useEffect, useMemo } = React;
                                     </span>
                                     <span className="text-on-surface-variant text-sm font-medium">{activity.date || 'Arsip'}</span>
                                 </div>
-                                <h2 className="text-3xl md:text-4xl font-bold mb-6 tracking-tight leading-tight">{activity.title}</h2>
+                                <h2 className="text-3xl md:text-4xl font-bold mb-6 tracking-tight leading-tight text-on-surface">{activity.title}</h2>
                                 <div className="space-y-6 mb-8">
                                     <div className="flex items-start gap-4">
                                         <div className="p-2 rounded-lg bg-primary/5"><Icon name="map-pin" className="w-5 h-5 text-primary" /></div>
@@ -1284,7 +693,7 @@ const { useState, useEffect, useMemo } = React;
                                                             href={doc.link} 
                                                             target="_blank" 
                                                             rel="noopener noreferrer"
-                                                            className="flex items-center gap-2 p-3 rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors group"
+                                                            className="flex items-center gap-2 p-3 rounded-lg bg-primary text-white hover:opacity-90 transition-colors group"
                                                         >
                                                             <Icon name="external-link" className="w-4 h-4 text-white group-hover:scale-110 transition-transform" />
                                                             <span className="text-white group-hover:text-white transition-colors">Foto Dokumentasi</span>
@@ -1317,7 +726,7 @@ const { useState, useEffect, useMemo } = React;
                                         Bagikan
                                     </button>
                                     {(!activity.documentation || activity.documentation.length === 0) && (
-                                        <button className="flex-1 py-4 rounded-xl bg-primary text-on-primary font-bold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20">
+                                        <button className="flex-1 py-4 rounded-xl bg-primary text-white font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20">
                                             Lihat Dokumentasi
                                         </button>
                                     )}
@@ -1331,38 +740,7 @@ const { useState, useEffect, useMemo } = React;
 
         const HomePage = ({ onNavigate }) => {
             const [selectedActivity, setSelectedActivity] = useState(null);
-            const [activityLikes, setActivityLikes] = useState(() => {
-                // Load likes from localStorage
-                const saved = localStorage.getItem('paskanessActivityLikes');
-                return saved ? JSON.parse(saved) : {};
-            });
-
-            // Generate device ID for like tracking
-            const getDeviceId = () => {
-                let deviceId = localStorage.getItem('paskanessDeviceId');
-                if (!deviceId) {
-                    deviceId = 'device_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-                    localStorage.setItem('paskanessDeviceId', deviceId);
-                }
-                return deviceId;
-            };
-
-            const handleLike = (activityId, e) => {
-                e.stopPropagation(); // Prevent triggering the card click
-                
-                // Update likes count (allow multiple likes for sync across devices - note: for full sync, backend needed)
-                const newLikes = {
-                    ...activityLikes,
-                    [activityId]: (activityLikes[activityId] || 0) + 1
-                };
-                setActivityLikes(newLikes);
-                localStorage.setItem('paskanessActivityLikes', JSON.stringify(newLikes));
-            };
-
-            const hasUserLiked = (activityId) => {
-                // Simplified: show as liked if count > 0 (for visual feedback)
-                return (activityLikes[activityId] || 0) > 0;
-            };
+            const { handleLike, hasUserLiked, getTotalLikes } = useLikes(); 
 
             return (
                 <div className="pt-24 fade-in">
@@ -1393,29 +771,29 @@ const { useState, useEffect, useMemo } = React;
                                         type="file" 
                                         accept="image/*" 
                                         id="logo-file-input"
-                                        className="w-full p-3 rounded-xl bg-white/5 border border-primary/30 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-primary/90 file:text-white hover:file:bg-primary cursor-pointer transition-all"
+                                        className="w-full p-3 rounded-xl bg-black/5 dark:bg-white/5 border border-primary/30 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-primary/90 file:text-white hover:file:bg-primary cursor-pointer transition-all text-on-surface"
                                         onChange={handleLogoChange}
                                     />
                                     <p className="text-xs text-on-surface-variant mt-2">Upload gambar baru (JPG, PNG). Otomatis tersimpan.</p>
                                     <button 
                                         onClick={resetLogo}
-                                        className="w-full mt-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-on-surface border border-white/20 transition-all text-sm font-medium"
+                                        className="w-full mt-4 py-2 rounded-xl bg-black/5 hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/20 text-on-surface border border-black/10 dark:border-white/20 transition-all text-sm font-medium"
                                     >
                                         Reset ke Default
                                     </button>
                                 </div>
                             </div>
-                            <h1 className="text-5xl md:text-7xl font-extrabold mb-6 tracking-tight">
+                            <h1 className="text-5xl md:text-7xl font-extrabold mb-6 tracking-tight text-on-surface">
                                 {WEBSITE_CONTENT.home.heroTitle} <span className="text-gradient">{WEBSITE_CONFIG.brandName}</span>
                             </h1>
                             <p className="text-xl md:text-2xl text-on-surface-variant max-w-3xl mx-auto leading-relaxed mb-10">
                                 {WEBSITE_CONTENT.home.heroSubtitle}
                             </p>
                             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                                <button onClick={() => onNavigate('archive')} className="px-8 py-4 bg-primary text-on-primary font-bold rounded-xl shadow-lg shadow-primary/20 hover:brightness-110 transition-all active:scale-95">
+                                <button onClick={() => onNavigate('archive')} className="px-8 py-4 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20 hover:brightness-110 transition-all active:scale-95">
                                     Lihat Arsip Kegiatan
                                 </button>
-                                <button className="px-8 py-4 glass-panel text-primary font-bold rounded-xl hover:bg-white/5 transition-all active:scale-95">
+                                <button className="px-8 py-4 glass-panel text-primary font-bold rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all active:scale-95">
                                     Pelajari Visi Kami
                                 </button>
                             </div>
@@ -1434,7 +812,7 @@ const { useState, useEffect, useMemo } = React;
                             <div className="glass-panel p-8 rounded-3xl flex flex-col justify-between">
                                 <div className="space-y-4">
                                     <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center"><Icon name="rocket" className="w-6 h-6 text-tertiary" /></div>
-                                    <h3 className="text-2xl font-bold">{WEBSITE_CONTENT.home.missionTitle}</h3>
+                                    <h3 className="text-2xl font-bold text-on-surface">{WEBSITE_CONTENT.home.missionTitle}</h3>
                                     <p className="text-on-surface-variant">{WEBSITE_CONTENT.home.missionText}</p>
                                 </div>
                                 <div className="mt-8 pt-8">
@@ -1450,7 +828,7 @@ const { useState, useEffect, useMemo } = React;
                     <section className="max-w-7xl mx-auto px-8 py-24">
                         <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
                             <div>
-                                <h2 className="text-4xl font-bold mb-4">{WEBSITE_CONTENT.home.highlightTitle}</h2>
+                                <h2 className="text-4xl font-bold mb-4 text-on-surface">{WEBSITE_CONTENT.home.highlightTitle}</h2>
                                 <p className="text-on-surface-variant">{WEBSITE_CONTENT.home.highlightSubtitle}</p>
                             </div>
                             <button onClick={() => onNavigate('archive')} className="text-primary border border-primary/30 px-6 py-2 rounded-full hover:bg-primary/5 transition-all">
@@ -1466,7 +844,7 @@ const { useState, useEffect, useMemo } = React;
                                     </div>
                                     <div className="p-6">
                                         <div className="flex items-center justify-between mb-3 gap-3">
-                                            <h3 className="text-xl font-bold group-hover:text-primary transition-colors">{activity.title}</h3>
+                                            <h3 className="text-xl font-bold text-on-surface group-hover:text-primary transition-colors">{activity.title}</h3>
                                             {activity.category && (
                                                 <span className="rounded-full bg-primary/10 px-3 py-1 text-xs uppercase tracking-wider text-primary">
                                                     {activity.category}
@@ -1481,12 +859,12 @@ const { useState, useEffect, useMemo } = React;
                                                     onClick={(e) => handleLike(activity.id, e)}
                                                     className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium transition-all ${
                                                         hasUserLiked(activity.id) 
-                                                            ? 'bg-red-500/20 text-red-400' 
-                                                            : 'bg-white/5 text-on-surface-variant hover:bg-red-500/10 hover:text-red-400'
+                                                        ? 'bg-red-500/20 text-red-400' 
+                                                        : 'bg-black/5 dark:bg-white/5 text-on-surface-variant hover:bg-red-500/10 hover:text-red-400'
                                                     }`}
                                                 >
                                                     <Icon name="heart" className={`w-4 h-4 ${hasUserLiked(activity.id) ? 'fill-current' : ''}`} />
-                                                    <span>{activityLikes[activity.id] || activity.likes || 0}</span>
+                                                    <span>{getTotalLikes(activity.id) || activity.likes || 0}</span>
                                                 </button>
                                                 <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">{activity.status}</span>
                                             </div>
@@ -1503,38 +881,7 @@ const { useState, useEffect, useMemo } = React;
 
         const ArchivePage = () => {
             const [selectedActivity, setSelectedActivity] = useState(null);
-            const [activityLikes, setActivityLikes] = useState(() => {
-                // Load likes from localStorage
-                const saved = localStorage.getItem('paskanessActivityLikes');
-                return saved ? JSON.parse(saved) : {};
-            });
-
-            // Generate device ID for like tracking
-            const getDeviceId = () => {
-                let deviceId = localStorage.getItem('paskanessDeviceId');
-                if (!deviceId) {
-                    deviceId = 'device_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-                    localStorage.setItem('paskanessDeviceId', deviceId);
-                }
-                return deviceId;
-            };
-
-            const handleLike = (activityId, e) => {
-                e.stopPropagation(); // Prevent triggering the card click
-                
-                // Update likes count (allow multiple likes for sync across devices - note: for full sync, backend needed)
-                const newLikes = {
-                    ...activityLikes,
-                    [activityId]: (activityLikes[activityId] || 0) + 1
-                };
-                setActivityLikes(newLikes);
-                localStorage.setItem('paskanessActivityLikes', JSON.stringify(newLikes));
-            };
-
-            const hasUserLiked = (activityId) => {
-                // Simplified: show as liked if count > 0 (for visual feedback)
-                return (activityLikes[activityId] || 0) > 0;
-            };
+            const { handleLike, hasUserLiked, getTotalLikes } = useLikes();
 
             return (
                 <div className="pt-32 pb-20 px-6 max-w-7xl mx-auto fade-in">
@@ -1548,7 +895,7 @@ const { useState, useEffect, useMemo } = React;
                     <section className="mb-24">
                         <div className="flex items-center gap-3 mb-10">
                             <Icon name="history" className="text-primary w-8 h-8" />
-                            <h2 className="text-3xl font-bold tracking-tight">{WEBSITE_CONTENT.archive.recentTitle}</h2>
+                            <h2 className="text-3xl font-bold tracking-tight text-on-surface">{WEBSITE_CONTENT.archive.recentTitle}</h2>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                             {ACTIVITIES.map((activity) => (
@@ -1559,19 +906,19 @@ const { useState, useEffect, useMemo } = React;
                                     </div>
                                     <div className="p-8">
                                         <div className="flex items-center gap-2 text-primary text-sm font-medium mb-3"><Icon name="calendar" className="w-4 h-4" />{activity.date}</div>
-                                        <h3 className="text-xl font-bold mb-3 group-hover:text-primary transition-colors">{activity.title}</h3>
+                                        <h3 className="text-xl font-bold text-on-surface mb-3 group-hover:text-primary transition-colors">{activity.title}</h3>
                                         <p className="text-on-surface-variant text-sm leading-relaxed mb-6 line-clamp-3">{activity.description}</p>
                                         <div className="flex items-center justify-between gap-3">
                                             <button 
                                                 onClick={(e) => handleLike(activity.id, e)}
                                                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                                                     hasUserLiked(activity.id) 
-                                                        ? 'bg-red-500/20 text-red-400' 
-                                                        : 'bg-white/5 text-on-surface-variant hover:bg-red-500/10 hover:text-red-400'
+                                                    ? 'bg-red-500/20 text-red-400' 
+                                                    : 'bg-black/5 dark:bg-white/5 text-on-surface-variant hover:bg-red-500/10 hover:text-red-400'
                                                 }`}
                                             >
                                                 <Icon name="heart" className={`w-4 h-4 ${hasUserLiked(activity.id) ? 'fill-current' : ''}`} />
-                                                <span>{activityLikes[activity.id] || activity.likes || 0}</span>
+                                                <span>{getTotalLikes(activity.id) || activity.likes || 0}</span>
                                             </button>
                                             <div className="w-full py-3 rounded-lg border border-primary/30 text-primary font-semibold glass-panel-elevated group-hover:bg-primary/20 transition-all duration-300 flex items-center justify-center gap-2">
                                                 <Icon name="eye" className="w-4 h-4" />Lihat Detail
@@ -1586,13 +933,13 @@ const { useState, useEffect, useMemo } = React;
                     <section className="mb-24">
                         <div className="flex items-center gap-3 mb-10">
                             <Icon name="history" className="text-on-surface-variant w-8 h-8" />
-                            <h2 className="text-3xl font-bold tracking-tight">{WEBSITE_CONTENT.archive.pastTitle}</h2>
+                            <h2 className="text-3xl font-bold tracking-tight text-on-surface">{WEBSITE_CONTENT.archive.pastTitle}</h2>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-4 md:grid-rows-2 gap-6">
                             {PAST_COLLECTIONS.map((item, idx) => (
                                 <div key={item.id} onClick={() => setSelectedActivity({ ...item, status: 'Arsip', location: 'N/A' })} className={`glass-panel rounded-xl overflow-hidden group relative min-h-[300px] cursor-pointer ${idx === 0 ? "md:col-span-2 md:row-span-2" : idx === 1 ? "md:col-span-2 md:row-span-1" : "md:col-span-1 md:row-span-1"}`}>
                                     <img src={getImageUrl(item)} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" referrerPolicy="no-referrer" />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent"></div>
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
                                     <div className="absolute bottom-0 left-0 p-8 w-full">
                                         <div className="text-primary text-xs font-bold mb-2 tracking-[0.2em] uppercase">{item.category}</div>
                                         <h3 className="text-2xl font-bold mb-3 text-white">{item.title}</h3>
@@ -1601,12 +948,12 @@ const { useState, useEffect, useMemo } = React;
                                             onClick={(e) => handleLike(item.id, e)}
                                             className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                                                 hasUserLiked(item.id) 
-                                                    ? 'bg-red-500/20 text-red-400' 
-                                                    : 'bg-white/10 text-white hover:bg-red-500/20 hover:text-red-400'
+                                                ? 'bg-red-500/20 text-red-400' 
+                                                : 'bg-white/10 text-white hover:bg-red-500/20 hover:text-red-400'
                                             }`}
                                         >
                                             <Icon name="heart" className={`w-4 h-4 ${hasUserLiked(item.id) ? 'fill-current' : ''}`} />
-                                            <span>{activityLikes[item.id] || item.likes || 0}</span>
+                                            <span>{getTotalLikes(item.id) || item.likes || 0}</span>
                                         </button>
                                     </div>
                                 </div>
@@ -1623,19 +970,6 @@ const { useState, useEffect, useMemo } = React;
             const filteredMembers = useMemo(() => MEMBERS.filter(m => m.period === activePeriod), [activePeriod]);
 
             const grouped = useMemo(() => {
-                const excludedRoles = [
-                    'Ketua', 
-                    'Wakil Ketua', 
-                    'Pemangku Adat', 
-                    'Kerana', 
-                    'Kerani', 
-                    'Litev', 
-                    'Litbang', 
-                    'Tekpram', 
-                    'Pemateri', 
-                    'Juang'
-                ];
-
                 return {
                     ketua: filteredMembers.find(m => m.role === 'Ketua'),
                     wakil: filteredMembers.find(m => m.role === 'Wakil Ketua'),
@@ -1659,12 +993,12 @@ const { useState, useEffect, useMemo } = React;
             }, [filteredMembers]);
 
             const MemberCard = ({ member, colorClass = "text-primary" }) => (
-                <div className="glass-panel p-6 rounded-2xl text-center hover:translate-y-[-8px] hover:shadow-[0_10px_30px_rgba(0,0,0,0.2)] transition-all duration-300 group">
+                <div className="glass-panel p-6 rounded-2xl text-center hover:translate-y-[-8px] hover:shadow-[0_10px_30px_rgba(0,0,0,0.1)] transition-all duration-300 group">
                     <div className="overflow-hidden rounded-xl mb-4">
-                        <img src={getImageUrl(member)} className="w-24 h-24 mx-auto object-cover border border-white/10 group-hover:scale-110 transition-transform duration-500" referrerPolicy="no-referrer" />
+                        <img src={getImageUrl(member)} className="w-24 h-24 mx-auto object-cover border border-black/5 dark:border-white/10 group-hover:scale-110 transition-transform duration-500" referrerPolicy="no-referrer" />
                     </div>
                     <p className={`text-xs font-bold uppercase tracking-widest mb-1 ${colorClass}`}>{member.role}</p>
-                    <p className="text-lg font-semibold">{member.name}</p>
+                    <p className="text-lg font-semibold text-on-surface">{member.name}</p>
                 </div>
             );
 
@@ -1672,7 +1006,7 @@ const { useState, useEffect, useMemo } = React;
                 if (members.length === 0) return null;
                 return (
                     <div className="mb-24">
-                        <h3 className="text-2xl font-bold mb-10 flex items-center gap-3">
+                        <h3 className="text-2xl font-bold text-on-surface mb-10 flex items-center gap-3">
                             <span className={`w-12 h-[2px] ${colorClass.replace('text-', 'bg-')}`}></span>{title}
                         </h3>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -1685,7 +1019,7 @@ const { useState, useEffect, useMemo } = React;
             return (
                 <div className="pt-32 pb-20 px-6 max-w-7xl mx-auto fade-in">
                     <header className="text-center mb-16">
-                        <h1 className="text-5xl md:text-6xl font-extrabold text-on-background tracking-tight mb-6">
+                        <h1 className="text-5xl md:text-6xl font-extrabold text-on-surface tracking-tight mb-6">
                             {WEBSITE_CONTENT.structure.title.split(' ')[0]} <span className="text-primary">{WEBSITE_CONTENT.structure.title.split(' ')[1]}</span>
                         </h1>
                         <p className="text-on-surface-variant max-w-2xl mx-auto text-lg">{WEBSITE_CONTENT.structure.subtitle}</p>
@@ -1694,7 +1028,7 @@ const { useState, useEffect, useMemo } = React;
                     <div className="flex flex-col items-center mb-20">
                         <div className="glass-panel p-1.5 rounded-full flex gap-1 inline-flex overflow-x-auto max-w-full">
                             {AVAILABLE_PERIODS.map((period) => (
-                                <button key={period} onClick={() => setActivePeriod(period)} className={`px-8 py-3 rounded-full text-sm font-bold transition-all duration-300 whitespace-nowrap ${activePeriod === period ? "bg-primary/15 border border-primary/40 text-primary shadow-[0_0_20px_rgba(125,211,252,0.1)]" : "text-on-surface-variant hover:text-primary hover:bg-white/5"}`}>
+                                <button key={period} onClick={() => setActivePeriod(period)} className={`px-8 py-3 rounded-full text-sm font-bold transition-all duration-300 whitespace-nowrap ${activePeriod === period ? "bg-primary/15 border border-primary/40 text-primary shadow-[0_0_20px_rgba(125,211,252,0.1)]" : "text-on-surface-variant hover:text-primary hover:bg-black/5 dark:hover:bg-white/5"}`}>
                                     Periode {period}
                                 </button>
                             ))}
@@ -1710,7 +1044,7 @@ const { useState, useEffect, useMemo } = React;
                         <>
                             {grouped.ketua && (
                                 <div className="mb-24">
-                                    <h3 className="text-2xl font-bold mb-10 flex items-center gap-3"><span className="w-12 h-[2px] bg-primary"></span>{WEBSITE_CONTENT.structure.categories.pimpinan}</h3>
+                                    <h3 className="text-2xl font-bold text-on-surface mb-10 flex items-center gap-3"><span className="w-12 h-[2px] bg-primary"></span>{WEBSITE_CONTENT.structure.categories.pimpinan}</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
                                         <div className="md:col-span-8 glass-panel rounded-3xl p-8 flex flex-col md:flex-row items-center gap-8 group hover:shadow-[0_0_30px_rgba(125,211,252,0.15)] transition-all duration-500">
                                             <div className="overflow-hidden rounded-2xl">
@@ -1733,49 +1067,22 @@ const { useState, useEffect, useMemo } = React;
                                                 </div>
                                                 <span className="px-3 py-1 rounded-full bg-purple-500/10 text-tertiary text-xs font-bold mb-3 tracking-widest uppercase">Wakil Ketua</span>
                                                 <h3 className="text-2xl font-bold text-on-surface">{grouped.wakil.name}</h3>
+                                                <p className="text-on-surface-variant text-lg leading-relaxed mb-6 italic">"{grouped.wakil.quote || 'Membangun masa depan bersama.'}"</p>
                                             </div>
                                         )}
                                     </div>
                                 </div>
                             )}
-                            <RoleSection 
-                                title={WEBSITE_CONTENT.structure.categories.pemangkuAdat} 
-                                members={grouped.pemangkuAdat} 
-                                colorClass="text-primary" 
-                            />
-                            <RoleSection 
-                                title={WEBSITE_CONTENT.structure.categories.sekretariat} 
-                                members={grouped.sekretariat} 
-                                colorClass="text-primary" 
-                            />
-                            <RoleSection 
-                                title={WEBSITE_CONTENT.structure.categories.juang} 
-                                members={grouped.juang} 
-                                colorClass="text-tertiary"
-                            />
-                            <RoleSection 
-                                title={WEBSITE_CONTENT.structure.categories.litev} 
-                                members={grouped.litev} 
-                                colorClass="text-primary" 
-                            />
-                            <RoleSection 
-                                title={WEBSITE_CONTENT.structure.categories.litbang} 
-                                members={grouped.litbang} 
-                                colorClass="text-primary" 
-                            />
-                            <RoleSection 
-                                title={WEBSITE_CONTENT.structure.categories.tekpram} 
-                                members={grouped.tekpram} 
-                                colorClass="text-primary" 
-                            />
-                            <RoleSection 
-                                title={WEBSITE_CONTENT.structure.categories.pemateri} 
-                                members={grouped.pemateri} 
-                                colorClass="text-primary" 
-                            />
+                            <RoleSection title={WEBSITE_CONTENT.structure.categories.pemangkuAdat} members={grouped.pemangkuAdat} colorClass="text-primary" />
+                            <RoleSection title={WEBSITE_CONTENT.structure.categories.sekretariat} members={grouped.sekretariat} colorClass="text-primary" />
+                            <RoleSection title={WEBSITE_CONTENT.structure.categories.juang} members={grouped.juang} colorClass="text-tertiary" />
+                            <RoleSection title={WEBSITE_CONTENT.structure.categories.litev} members={grouped.litev} colorClass="text-primary" />
+                            <RoleSection title={WEBSITE_CONTENT.structure.categories.litbang} members={grouped.litbang} colorClass="text-primary" />
+                            <RoleSection title={WEBSITE_CONTENT.structure.categories.tekpram} members={grouped.tekpram} colorClass="text-primary" />
+                            <RoleSection title={WEBSITE_CONTENT.structure.categories.pemateri} members={grouped.pemateri} colorClass="text-primary" />
                             {grouped.departemen.length > 0 && (
                                 <div className="mb-24">
-                                    <h3 className="text-2xl font-bold mb-10 flex items-center gap-3"><span className="w-12 h-[2px] bg-primary"></span>{WEBSITE_CONTENT.structure.categories.departemen}</h3>
+                                    <h3 className="text-2xl font-bold text-on-surface mb-10 flex items-center gap-3"><span className="w-12 h-[2px] bg-primary"></span>{WEBSITE_CONTENT.structure.categories.departemen}</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                                         {grouped.departemen.map(member => <MemberCard key={member.id} member={member} colorClass={member.role.includes('Bakat') ? "text-tertiary" : "text-primary"} />)}
                                     </div>
@@ -1789,9 +1096,26 @@ const { useState, useEffect, useMemo } = React;
 
         function App() {
             const [activeTab, setActiveTab] = useState('home');
+            
+            // --- LIGHT/DARK MODE STATE & EFFECT ---
+            const [isLightMode, setIsLightMode] = useState(() => {
+                return localStorage.getItem('paskanessTheme') === 'light';
+            });
 
             useEffect(() => {
-                // Load saved logo from localStorage
+                if (isLightMode) {
+                    document.documentElement.classList.add('light-mode');
+                    localStorage.setItem('paskanessTheme', 'light');
+                } else {
+                    document.documentElement.classList.remove('light-mode');
+                    localStorage.setItem('paskanessTheme', 'dark');
+                }
+            }, [isLightMode]);
+
+            const toggleTheme = () => setIsLightMode(!isLightMode);
+            // --------------------------------------
+
+            useEffect(() => {
                 const savedLogo = localStorage.getItem('paskanessLogoImage');
                 if (savedLogo) {
                     window.currentLogoImage = savedLogo;
@@ -1804,7 +1128,6 @@ const { useState, useEffect, useMemo } = React;
                 if (window.lucide) window.lucide.createIcons();
             }, [activeTab]);
 
-            // Global functions for logo management
             window.handleLogoChange = (event) => {
                 const file = event.target.files[0];
                 if (file) {
@@ -1812,7 +1135,6 @@ const { useState, useEffect, useMemo } = React;
                     reader.onload = (e) => {
                         window.currentLogoImage = e.target.result;
                         localStorage.setItem('paskanessLogoImage', window.currentLogoImage);
-                        // Refresh icons
                         if (window.lucide) window.lucide.createIcons();
                     };
                     reader.readAsDataURL(file);
@@ -1828,7 +1150,7 @@ const { useState, useEffect, useMemo } = React;
 
             return (
                 <div className="min-h-screen flex flex-col">
-                    <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
+                    <Navbar activeTab={activeTab} setActiveTab={setActiveTab} isLightMode={isLightMode} toggleTheme={toggleTheme} />
                     <main className="flex-grow">
                         {activeTab === 'home' && <HomePage onNavigate={setActiveTab} />}
                         {activeTab === 'archive' && <ArchivePage />}
