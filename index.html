@@ -15,6 +15,36 @@
     <script crossorigin src="https://unpkg.com/@babel/standalone@7.22.5/babel.min.js"></script>
     
     <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+        // Menggunakan Realtime Database agar tidak ada masa berlaku 30 hari
+        import { getDatabase, ref, onValue, set, get, update, increment, push } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
+
+        // Kunci API persis dari foto layar laptop Anda
+        const firebaseConfig = {
+            apiKey: "AIzaSyBxRCMWxb34jBQvHQwWId8YZ8ugBaH_WJY",
+            authDomain: "paskaness.firebaseapp.com",
+            projectId: "paskaness",
+            storageBucket: "paskaness.firebasestorage.app",
+            messagingSenderId: "219809083748",
+            appId: "1:219809083748:web:c61287aa3ba9f3da638a71",
+            measurementId: "G-JCNCNN21HB",
+            // Tambahan wajib untuk Realtime Database
+            databaseURL: "https://paskaness-default-rtdb.firebaseio.com" 
+        };
+
+        // Inisialisasi Firebase & tempelkan ke "window" agar bisa dipakai oleh React Babel
+        const app = initializeApp(firebaseConfig);
+        window.firebaseDb = getDatabase(app);
+        window.firebaseRef = ref;
+        window.firebaseGet = get;
+        window.firebaseSet = set;
+        window.firebaseUpdate = update;
+        window.firebaseIncrement = increment;
+        window.firebaseOnValue = onValue;
+        window.firebasePush = push;
+    </script>
     
     <script>
         tailwind.config = {
@@ -25,7 +55,6 @@
                         sans: ['Inter', 'sans-serif'],
                     },
                     colors: {
-                        /* Menggunakan CSS Variables untuk mendukung Light/Dark Mode */
                         background: 'var(--theme-bg)',
                         'on-background': 'var(--theme-text)',
                         surface: 'var(--theme-surface)',
@@ -59,7 +88,6 @@
             --theme-nav: rgba(10, 14, 26, 0.6);
             --theme-nav-mobile: rgba(10, 14, 26, 0.95);
             
-            /* Variabel dinamis untuk Animasi & Parallax Kedalaman 3D */
             --global-rot: 0deg; 
             --scroll-y: 0;
         }
@@ -145,8 +173,6 @@
         .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 
         /* ======== EFEK 3D & ANIMASI ======== */
-        
-        /* 1. Animasi Teks PASKANESS (Pop 3D setiap 10 Detik) */
         .animate-pop-10s {
             display: inline-block;
             transform-style: preserve-3d;
@@ -170,7 +196,6 @@
             }
         }
 
-        /* 2. Logo Mengambang 3D */
         .logo-3d-float {
             transform-style: preserve-3d;
             animation: float3d 6s ease-in-out infinite;
@@ -182,7 +207,6 @@
             100% { transform: translateY(0) rotateX(5deg) rotateY(-5deg) translateZ(20px); box-shadow: -10px 10px 30px rgba(0,0,0,0.2); }
         }
 
-        /* 3. Objek 3D Latar Belakang (Kubus & Diamond) */
         .shape-container {
             animation: floatBounce 8s ease-in-out infinite alternate;
         }
@@ -193,11 +217,9 @@
 
         .shape-wrapper {
             transform-style: preserve-3d;
-            /* Berputar terus dikendalikan variabel Javascript --global-rot */
             transform: rotateX(calc(var(--global-rot) * var(--rot-speed-x))) rotateY(calc(var(--global-rot) * var(--rot-speed-y)));
         }
 
-        /* Tampilan Kaca 3D */
         .cube-face {
             position: absolute;
             width: 100%;
@@ -209,7 +231,6 @@
             opacity: 0.9;
         }
 
-        /* 4. Gumpalan Cahaya Bergerak */
         .animate-blob {
             animation: blobFloat ease-in-out infinite alternate;
         }
@@ -218,7 +239,6 @@
             50% { transform: translate(30px, -50px) scale(1.1); }
             100% { transform: translate(-40px, 30px) scale(0.9); }
         }
-
     </style>
 </head>
 <body>
@@ -317,7 +337,6 @@
                     pemateri: 'Pemateri',
                     juang: 'Juang',
                     pembina: 'Pembina',
-                    
                 }
             }
         };
@@ -325,17 +344,14 @@
         const AVAILABLE_PERIODS = ['2025-2026', '2026-2027', '2027-2028', '2028-2029'];
 
         const MEMBERS = [
-            // Periode 2025-2026
             { id: 'p25-1', name: 'M.Tamamum Niam', role: 'Ketua', period: '2025-2026', quote: 'Siap memimpin PASKANESS menuju masa depan yang lebih gemilang.', image: '2026/ketua&wakil/ketua.JPG',},
             { id: 'p25-2', name: 'Revi Anindita Ramadhani', role: 'Wakil Ketua', period: '2025-2026', image: '2026/ketua&wakil/wakil.JPG',},
-            //pemangku Adat
             { id: 'p24-3', name: 'M. Alansyah Mahardika', role: 'Pemangku Adat 1', period: '2025-2026', image: '2026/Pemangku Adat/putik.JPG' },
             { id: 'p24-3', name: 'Keyko Abinaya', role: 'Pemangku Adat 1', period: '2025-2026', image: '2026/Pemangku Adat/keyko.JPG' },
             { id: 'p24-3', name: 'M. Kelvan Nurdianto', role: 'Pemangku Adat 2', period: '2025-2026', image: '2026/Pemangku Adat/kelvan.JPG' },
             { id: 'p24-3', name: 'Adelia Nur Wulan Ramadany', role: 'Pemangku Adat 2', period: '2025-2026', image: '2026/Pemangku Adat/Adel.JPG' },
             { id: 'p24-3', name: 'Afreza Ridho Ferdian', role: 'Pemangku Adat 3', period: '2025-2026', image: '2026/Pemangku Adat/om.JPG' },
             { id: 'p24-3', name: 'Putri Rahayu', role: 'Pemangku Adat 3', period: '2025-2026', image: '2026/Pemangku Adat/ketek.JPG' },
-            //kerana dan kerani
             { id: 'p25-4', name: 'M. Alfan Candra', role: 'Kerana (CO)', quote: 'hjgewu', period: '2025-2026', image: '2026/Kerana&kerani/alfan.JPG' },
             { id: 'p25-5', name: 'Patis Augusta', role: 'Kerani (Wakil)', period: '2025-2026', image: '2026/Kerana&kerani/tata.JPG' },
             { id: 'p25-4', name: 'Ihsani Habibullah', role: 'Kerana', period: '2025-2026', image: '2026/Kerana&kerani/ihsan.JPG' },
@@ -343,14 +359,12 @@
             { id: 'p25-4', name: 'Muhammad Hertanto Putra', role: 'Kerana', period: '2025-2026', image: '2026/Kerana&kerani/putra.JPG' },
             { id: 'p25-5', name: 'Nadhif haniya madani', role: 'Kerani', period: '2025-2026', image: '2026/Kerana&kerani/haniya.JPG' },
             { id: 'p25-5', name: 'Naila Cameela', role: 'Kerani', period: '2025-2026', image: '2026/Kerana&kerani/nela.JPG' },
-            //juang
             { id: 'p25-6', name: 'Nasya Fahima Atifa', role: 'Juang (CO)', period: '2025-2026', image: '2026/Juang/nasya.JPG' },
             { id: 'p25-6', name: 'Afrinda Hanna Farinsia', role: 'Juang (Wakil)', period: '2025-2026', image: '2026/Juang/afrin.JPG' },
             { id: 'p25-6', name: 'Bimo Cahyo Saputro', role: 'Juang', period: '2025-2026', image: '2026/Juang/bimo.JPG'},
             { id: 'p25-6', name: 'Siti Istianatul Mutafika', role: 'Juang', period: '2025-2026', image: '2026/Juang/fika.JPG'},
             { id: 'p25-6', name: 'Galeh Candra Adi Nugraha', role: 'Juang', period: '2025-2026', image: '2026/Juang/galeh.JPG'},
             { id: 'p25-6', name: 'Adinda Sagita Kirana P', role: 'Juang', period: '2025-2026', image: '2026/Juang/adinda.JPG'},
-            //Litev
             { id: 'p24-7', name: 'Rizky Aditya', role: 'Litev (CO)', period: '2025-2026', image: '2026/litev/kiki.jpg' },
             { id: 'p24-7', name: 'Firnanda Ayu Sekar Arum', role: 'Litev (Wakil)', period: '2025-2026', image: '2026/litev/nanda.jpg' },
             { id: 'p24-7', name: 'Rafa Arya Widana', role: 'Litev', period: '2025-2026', image: '2026/litev/rafa.jpg' },
@@ -367,7 +381,6 @@
             { id: 'p24-7', name: 'Nikita Khoirun Nisa', role: 'Litev', period: '2025-2026', image: '2026/litev/nikita.jpg' },
             { id: 'p24-7', name: 'Mustika Sari', role: 'Litev', period: '2025-2026', image: '2026/litev/mustika.jpg' },
             { id: 'p24-7', name: 'Widya Aulia Putri', role: 'Litev', period: '2025-2026', image: '2026/litev/widya.jpg' },
-            //litbang
             { id: 'p24-8', name: 'Eka Putri Ramadhani', role: 'Litbang (CO)', period: '2025-2026', image: '2026/litbang/eka.jpg'},
             { id: 'p24-8', name: 'Rizki Dwi Karina', role: 'Litbang (Wakil)', period: '2025-2026', image: '2026/litbang/rizki.jpg' },
             { id: 'p24-8', name: 'Anita Nur Laili Agustin', role: 'Litbang', period: '2025-2026', image: '2026/litbang/anita.jpg' },
@@ -386,7 +399,6 @@
             { id: 'p24-8', name: 'Nazwa Aurelia Hezar ', role: 'Litbang', period: '2025-2026', image: '2026/litbang/nazwa.jpg' },
             { id: 'p24-8', name: 'Vannesya Vazilatun Oktavia', role: 'Litbang', period: '2025-2026', image: '2026/litbang/vannesya.jpg' },
             { id: 'p24-8', name: 'Ihda Arzika Nuril Khoiriyah', role: 'Litbang', period: '2025-2026', image: '2026/litbang/ihda.jpg' },
-            //tekpram
             { id: 'p24-9', name: 'Rifatulloh Ahmad Alfarisyi', role: 'Tekpram (CO)', period: '2025-2026', image: '2026/tekpram/rafi.jpg' },
             { id: 'p24-9', name: 'Dita Permata Sari', role: 'Tekpram (Wakil)', period: '2025-2026', image: '2026/tekpram/dita.jpg' },
             { id: 'p24-9', name: 'A. Nabil P.A', role: 'Tekpram', period: '2025-2026', image: '2026/tekpram/nabil.jpg' },
@@ -398,7 +410,6 @@
             { id: 'p24-9', name: 'Dharma Maheswara', role: 'Tekpram', period: '2025-2026', image: '2026/tekpram/dharma.jpg' },
             { id: 'p24-9', name: 'Erlambang', role: 'Tekpram', period: '2025-2026', image: '2026/tekpram/erlambang.jpg' },
             { id: 'p24-9', name: 'Zakyatul Afifah F', role: 'Tekpram', period: '2025-2026', image: '2026/tekpram/zakyatul.jpg' },
-            //pemateri
             { id: 'p24-10', name: 'Sofie Ajeng R ', role: 'Pemateri (CO)', period: '2025-2026', image: '2026/pemateri/sofie.jpg' },
             { id: 'p24-10', name: 'Adhy Dhamar Rahmadan ', role: 'Pemateri (Wakil)', period: '2025-2026', image: '2026/pemateri/adhy.jpg' },
             { id: 'p24-10', name: 'Intan Nadya Fuzy  ', role: 'Pemateri', period: '2025-2026', image: '2026/pemateri/intan.jpg' },
@@ -438,10 +449,8 @@
             { id: 'p24-10', name: 'Anindyta Rahma', role: 'Pemateri', period: '2025-2026', image: '2026/pemateri/anindyta.jpg' },
             { id: 'p24-10', name: 'Naswa Bilqis', role: 'Pemateri', period: '2025-2026', image: '2026/pemateri/naswa.jpg' },
             { id: 'p24-10', name: 'Mei Alifvia', role: 'Pemateri', period: '2025-2026', image: '2026/pemateri/mei.jpg' },
-            // Periode 2026-2027
         ];
 
-        // ===== PENTING: ID DIUBAH MENYESUAIKAN FOTO DATABASE PHPMYADMIN ANDA =====
         const ACTIVITIES = [
             { id: 1, title: 'Penerimaan Tamu Penegak', date: '30-31 Agustus 2025', description: 'Menjelajahi masa depan teknologi dengan para ahli industri dalam sesi diskusi panel yang mendalam.', image: 'thumbnail/ptp.jpg', imageUrl: '', location: 'SMAN 1 Sumberrejo', status: 'Terlaksana', category: 'sosial', likes: 0, documentation: [{ title: 'Foto Dokumentasi', link: 'https://drive.google.com/drive/folders/1e25b7WyNHz4b65EkHeRyHuAWCYS-htMm' }]},
             { id: 4, title: 'Giat Pionering', date: '24 Oktober 2025', description: 'Sesi kolaboratif untuk mengasah keterampilan desain dan pemikiran kreatif bagi seluruh anggota.', image: 'thumbnail/pionering.jpg', imageUrl: '', location: 'SMAN 1 Sumberrejo', status: 'Terlaksana', category: 'Edukasi', likes: 0, documentation: [{ title: 'Foto Dokumentasi', link: 'https://drive.google.com/drive/folders/1mTdvi-SOMLEzwTCM48cEvhX0YNCkqQnE' }]},
@@ -458,58 +467,72 @@
 
         normalizeImageSources();
 
-        // ===== PENTING: USELIKES DIUBAH MENGGUNAKAN API BACKEND (TIDAK LOCALSTORAGE LAGI) =====
+        // ===== 2. FUNGSI FIREBASE (LIKE) =====
         const useLikes = () => {
-            const [userLikes, setUserLikes] = useState(new Set());
+            const [userLikes, setUserLikes] = useState(() => {
+                const saved = localStorage.getItem('paskanessUserLikes');
+                return saved ? new Set(JSON.parse(saved)) : new Set();
+            });
             const [totalLikes, setTotalLikes] = useState({});
 
-            // Sesuaikan URL ini jika file disimpan di tempat berbeda
-            const BACKEND_URL = 'https://paskaness.gamer.free/api_like.php?i=1';
-
-            // Ambil data like asli dari database MySQL XAMPP
             useEffect(() => {
-                fetch(BACKEND_URL)
-                    .then(res => res.json())
-                    .then(data => {
-                        setTotalLikes(data.totals);
-                        setUserLikes(new Set(data.userLiked));
-                    })
-                    .catch(err => console.error('Gagal mengambil data dari database:', err));
+                // Dengarkan perubahan total like dari Firebase Realtime DB secara real-time
+                if (window.firebaseDb && window.firebaseRef && window.firebaseOnValue) {
+                    const likesRef = window.firebaseRef(window.firebaseDb, 'likes');
+                    const unsubscribe = window.firebaseOnValue(likesRef, (snapshot) => {
+                        if (snapshot.exists()) {
+                            const data = snapshot.val();
+                            const newTotals = {};
+                            for (const key in data) {
+                                const postId = key.replace('post_', '');
+                                newTotals[postId] = data[key].jumlahLike || 0;
+                            }
+                            setTotalLikes(newTotals);
+                        } else {
+                            setTotalLikes({});
+                        }
+                    });
+                    return () => unsubscribe();
+                }
             }, []);
 
-            // Proses Like & Unlike ke database
-            const handleLike = useCallback((activityId, e) => {
+            const handleLike = useCallback(async (activityId, e) => {
                 if(e) e.stopPropagation();
                 
-                // Ubah tampilan seketika (Optimistic UI) agar terasa cepat
                 const newUserLikes = new Set(userLikes);
-                const currentTotal = totalLikes[activityId] || 0;
-                let newTotalLikes = { ...totalLikes };
+                let isLiking = false;
 
                 if (newUserLikes.has(activityId)) {
                     newUserLikes.delete(activityId);
-                    newTotalLikes[activityId] = Math.max(0, currentTotal - 1);
+                    isLiking = false;
                 } else {
                     newUserLikes.add(activityId);
-                    newTotalLikes[activityId] = currentTotal + 1;
+                    isLiking = true;
                 }
 
                 setUserLikes(newUserLikes);
-                setTotalLikes(newTotalLikes);
+                localStorage.setItem('paskanessUserLikes', JSON.stringify(Array.from(newUserLikes)));
 
-                // Kirim data sesungguhnya ke database MySQL via PHP
-                fetch(BACKEND_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ post_id: activityId })
-                })
-                .then(res => res.json())
-                .then(data => {
-                    // Update dengan angka mutlak dari database
-                    setTotalLikes(prev => ({ ...prev, [activityId]: data.total_likes }));
-                })
-                .catch(err => console.error('Error menyimpan ke database:', err));
-            }, [userLikes, totalLikes]);
+                // Update data langsung ke Firebase
+                if (window.firebaseDb) {
+                    const postRefPath = 'likes/post_' + activityId;
+                    const postRef = window.firebaseRef(window.firebaseDb, postRefPath);
+                    try {
+                        const snap = await window.firebaseGet(postRef);
+                        if (snap.exists()) {
+                            const currentLikes = snap.val().jumlahLike || 0;
+                            const newLikeCount = isLiking ? currentLikes + 1 : Math.max(0, currentLikes - 1);
+                            await window.firebaseUpdate(window.firebaseRef(window.firebaseDb, 'likes'), {
+                                [`post_${activityId}/jumlahLike`]: newLikeCount
+                            });
+                        } else if (isLiking) {
+                            await window.firebaseSet(postRef, { jumlahLike: 1 });
+                        }
+                    } catch (err) {
+                        console.error("Firebase Like Error: ", err);
+                    }
+                }
+            }, [userLikes]);
 
             const hasUserLiked = useCallback((activityId) => userLikes.has(activityId), [userLikes]);
             const getTotalLikes = useCallback((activityId) => totalLikes[activityId] || 0, [totalLikes]);
@@ -526,22 +549,18 @@
             return <i data-lucide={name} className={className}></i>;
         };
 
-        // Background 3D Objects yang disebar memanjang dan bereaksi saat scroll secara parallax
         const Background3DObjects = () => {
             const requestRef = useRef();
             const rotationRef = useRef(0);
 
             useEffect(() => {
                 const handleScroll = () => {
-                    // Update variable --scroll-y murni untuk keperluan parallax kedalaman (bergerak lambat ke atas)
                     document.documentElement.style.setProperty('--scroll-y', window.scrollY);
-                    // Menambah efek putaran lebih cepat sedikit saat layar sedang digeser
                     rotationRef.current += 1.2; 
                 };
                 window.addEventListener('scroll', handleScroll, { passive: true });
                 document.documentElement.style.setProperty('--scroll-y', window.scrollY);
 
-                // Animasi rotasi berputar tiada henti di sumbunya sendiri
                 const animate = () => {
                     rotationRef.current += 0.25; 
                     document.documentElement.style.setProperty('--global-rot', `${rotationRef.current}deg`);
@@ -555,7 +574,6 @@
                 };
             }, []);
 
-            // Gumpalan cahaya latar belakang
             const blobs = useMemo(() => Array.from({ length: 6 }).map((_, i) => ({
                 id: i,
                 left: `${Math.random() * 100}vw`,
@@ -567,23 +585,18 @@
                 color: ['#7dd3fc', '#c8a0f0', '#38bdf8', '#a855f7', '#60a5fa'][Math.floor(Math.random() * 5)]
             })), []);
 
-            // Objek 3D (Kubus & Diamond) disebar secara Absolut di sepanjang dokumen (hingga sangat dalam ke bawah)
-            // Konsep: Ditempatkan di absolute layer yang tinggi, sehingga akan ikut ter-scroll namun diberi offset --scroll-y agar lebih lambat.
             const shapesData = useMemo(() => {
                 const shapes = [];
-                // Membuat 40 objek 3D yang disebar di sepanjang tinggi dokumen
                 for (let i = 0; i < 40; i++) {
                     shapes.push({
                         id: i,
                         type: Math.random() > 0.5 ? 'cube' : 'diamond',
-                        size: Math.random() * 50 + 40, // ukuran 40px - 90px
-                        left: `${Math.random() * 90 + 5}%`, // tersebar lebar layar
-                        top: `${(i * 35) + (Math.random() * 20)}vh`, // Tersebar jauh ke bawah halaman (0 - ~1400vh)
+                        size: Math.random() * 50 + 40,
+                        left: `${Math.random() * 90 + 5}%`,
+                        top: `${(i * 35) + (Math.random() * 20)}vh`,
                         color: ['var(--theme-primary)', 'var(--theme-tertiary)', '#38bdf8', '#a855f7', '#60a5fa'][Math.floor(Math.random() * 5)],
                         rotX: (Math.random() - 0.5) * 3,
                         rotY: (Math.random() - 0.5) * 3,
-                        // parallaxSpeed positif berarti akan di translasikan ke BAWAH saat user scroll ke bawah, 
-                        // karena layar otomatis mendorongnya ke ATAS, efek keseluruhannya akan bergerak naik lebih lambat dari konten.
                         parallaxSpeed: Math.random() * 0.6 + 0.25 
                     });
                 }
@@ -593,7 +606,6 @@
             const Shape3D = ({ type, size, left, top, color, rotX, rotY, parallaxSpeed }) => {
                 return (
                     <div className="absolute pointer-events-none z-[-1]" style={{ left, top }}>
-                        {/* Wrapper efek Parallax kedalaman. Semakin besar parallaxSpeed, makin lambat geraknya (terasa makin jauh) */}
                         <div style={{ transform: `translateY(calc(var(--scroll-y) * ${parallaxSpeed} * 1px))` }}>
                             <div className="shape-container" style={{ width: size, height: size, perspective: '1000px', '--rot-speed-x': rotX, '--rot-speed-y': rotY, color }}>
                                 {type === 'cube' && (
@@ -624,15 +636,12 @@
 
             return (
                 <>
-                    {/* Fixed Blobs untuk latar belakang aura warna statis */}
                     <div className="fixed inset-0 overflow-hidden pointer-events-none z-[-2]">
                         {blobs.map(b => (
                             <div key={`blob-${b.id}`} className="absolute rounded-full opacity-20 dark:opacity-30 mix-blend-screen filter blur-[80px] animate-blob"
                                  style={{ left: b.left, top: b.top, width: b.width, height: b.height, background: b.color, animationDuration: b.animDuration, animationDelay: b.animDelay }} />
                         ))}
                     </div>
-                    
-                    {/* Absolute container (Ikut tinggi body), agar 3D shapes tersebar di seluruh dokumen dan dapat terus bermunculan */}
                     <div className="absolute inset-0 pointer-events-none z-[-1] overflow-hidden" style={{ minHeight: '100vh' }}>
                         {shapesData.map(shape => <Shape3D key={shape.id} {...shape} />)}
                     </div>
@@ -649,7 +658,6 @@
                         <div className="text-2xl font-semibold text-primary tracking-wider flex gap-2 items-center">
                             {WEBSITE_CONFIG.brandName}
                         </div>
-                        {/* Desktop Menu */}
                         <div className="hidden md:flex items-center space-x-8 font-medium tracking-tight">
                                 {[
                                     { id: 'home', label: 'Beranda', icon: 'home' },
@@ -667,13 +675,10 @@
                                         )}
                                     </button>
                                 ))}
-                                
-                                {/* Theme Toggle Desktop */}
                                 <button onClick={toggleTheme} className="ml-4 p-2 text-on-surface-variant hover:text-primary transition-colors rounded-full glass-panel flex items-center justify-center">
                                     <Icon name={isLightMode ? "moon" : "sun"} className="w-4 h-4" />
                                 </button>
                         </div>
-                        {/* Mobile Menu Buttons */}
                         <div className="md:hidden flex items-center gap-4">
                             <button onClick={toggleTheme} className="p-2 text-on-surface-variant hover:text-primary transition-colors rounded-full glass-panel flex items-center justify-center">
                                 <Icon name={isLightMode ? "moon" : "sun"} className="w-4 h-4" />
@@ -686,7 +691,6 @@
                             </button>
                         </div>
                     </div>
-                    {/* Mobile Menu */}
                     {isMobileMenuOpen && (
                         <div className="md:hidden bg-[var(--theme-nav-mobile)] backdrop-blur-lg border-t border-sky-400/10 transition-colors duration-300">
                             <div className="px-8 py-4 space-y-4">
@@ -722,10 +726,7 @@
                         <div className="text-xl font-bold text-primary mb-2">{WEBSITE_CONFIG.brandName}</div>
                         <p className="text-on-surface-variant text-sm">{WEBSITE_CONFIG.footerText}</p>
                     </div>
-                    
-                    {/* TOMBOL SOSIAL MEDIA (INSTAGRAM, TIKTOK, EMAIL) */}
                     <div className="flex gap-4">
-                        {/* Logo Instagram menggunakan murni format SVG (Pasti Muncul) */}
                         <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="w-12 h-12 glass-panel rounded-full flex items-center justify-center cursor-pointer hover:bg-primary hover:text-white transition-all shadow-lg hover:-translate-y-1 group">
                             <svg className="w-5 h-5 fill-none stroke-current text-on-surface-variant group-hover:text-white transition-colors" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
                                 <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
@@ -746,6 +747,97 @@
             </footer>
         );
 
+        // ===== 3. FITUR KOMENTAR =====
+        const CommentsSection = ({ activityId }) => {
+            const [comments, setComments] = useState([]);
+            const [name, setName] = useState('');
+            const [text, setText] = useState('');
+
+            useEffect(() => {
+                if (!activityId || !window.firebaseDb) return;
+                const commentsRef = window.firebaseRef(window.firebaseDb, `comments/post_${activityId}`);
+                
+                // Ambil data komentar real-time dari Firebase
+                const unsubscribe = window.firebaseOnValue(commentsRef, (snapshot) => {
+                    if (snapshot.exists()) {
+                        const data = snapshot.val();
+                        const commentsArray = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+                        // Mengurutkan komentar agar yang terbaru ada di atas
+                        commentsArray.sort((a, b) => b.timestamp - a.timestamp);
+                        setComments(commentsArray);
+                    } else {
+                        setComments([]);
+                    }
+                });
+                return () => unsubscribe();
+            }, [activityId]);
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                if (!name.trim() || !text.trim() || !window.firebaseDb) return;
+                
+                try {
+                    const commentsRef = window.firebaseRef(window.firebaseDb, `comments/post_${activityId}`);
+                    const newCommentRef = window.firebasePush(commentsRef); // Buat ID unik acak
+                    await window.firebaseSet(newCommentRef, {
+                        name: name.trim(),
+                        text: text.trim(),
+                        timestamp: Date.now()
+                    });
+                    setText(''); // Kosongkan kotak teks setelah terkirim
+                } catch (err) {
+                    console.error("Gagal kirim komentar", err);
+                }
+            };
+
+            return (
+                <div className="mt-8 pt-8 border-t border-primary/20">
+                    <h3 className="text-lg font-bold text-on-surface mb-4 flex items-center gap-2">
+                        <Icon name="message-square" className="w-5 h-5 text-primary" /> Komentar ({comments.length})
+                    </h3>
+                    
+                    {/* Form Input Komentar */}
+                    <form onSubmit={handleSubmit} className="mb-6 space-y-3">
+                        <input 
+                            type="text" 
+                            placeholder="Nama Anda" 
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            className="w-full bg-background/50 border border-primary/20 rounded-lg px-4 py-2 text-sm text-on-surface focus:outline-none focus:border-primary transition-colors"
+                            required
+                        />
+                        <textarea 
+                            placeholder="Tuliskan kesan atau tanggapan Anda..." 
+                            value={text}
+                            onChange={(e) => setText(e.target.value)}
+                            className="w-full bg-background/50 border border-primary/20 rounded-lg px-4 py-2 text-sm text-on-surface focus:outline-none focus:border-primary transition-colors resize-none h-20"
+                            required
+                        ></textarea>
+                        <button type="submit" className="px-5 py-2 bg-primary text-white text-sm font-bold rounded-lg hover:opacity-90 transition-all flex items-center gap-2">
+                            <Icon name="send" className="w-4 h-4" /> Kirim Komentar
+                        </button>
+                    </form>
+
+                    {/* Daftar List Komentar */}
+                    <div className="space-y-4 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                        {comments.length === 0 ? (
+                            <p className="text-on-surface-variant text-sm text-center italic py-4">Belum ada komentar. Jadilah yang pertama!</p>
+                        ) : (
+                            comments.map(comment => (
+                                <div key={comment.id} className="bg-background/40 p-4 rounded-xl border border-white/5 shadow-sm">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <span className="font-bold text-primary text-sm">{comment.name}</span>
+                                        <span className="text-xs text-on-surface-variant">{new Date(comment.timestamp).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year:'numeric'})}</span>
+                                    </div>
+                                    <p className="text-on-surface text-sm break-words leading-relaxed">{comment.text}</p>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
         const ActivityModal = ({ activity, onClose }) => {
             if (!activity) return null;
             return (
@@ -756,7 +848,7 @@
                             <Icon name="x" className="w-6 h-6" />
                         </button>
                         <div className="flex flex-col md:flex-row">
-                            <div className="md:w-1/2 h-64 md:h-auto">
+                            <div className="md:w-1/2 h-64 md:h-auto relative">
                                 <img src={getImageUrl(activity)} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                             </div>
                             <div className="md:w-1/2 p-8 md:p-12">
@@ -832,6 +924,9 @@
                                         </button>
                                     )}
                                 </div>
+                                
+                                {/* MEMANGGIL FITUR KOMENTAR DI BAWAH DETAIL POSTINGAN */}
+                                <CommentsSection activityId={activity.id} />
                             </div>
                         </div>
                     </div>
@@ -845,10 +940,7 @@
 
             return (
                 <div className="fade-in pb-12">
-                    
-                    {/* BAGIAN BANNER FULL WIDTH & TOP */}
                     <div className="relative w-full h-64 md:h-[400px] overflow-hidden z-0 border-b border-white/5">
-                        {/* Parallax banner dengan css root variable --scroll-y */}
                         <div className="absolute inset-0 w-full h-full" style={{ transform: `translateY(calc(var(--scroll-y) * 0.4 * 1px))` }}>
                             <img 
                                 src={WEBSITE_CONFIG.bannerImage} 
@@ -862,8 +954,6 @@
 
                     <section className="relative flex flex-col items-center justify-center px-6 z-10 perspective-1000">
                         <div className="relative z-20 max-w-5xl mx-auto text-center w-full" style={{ marginTop: 'calc(-1 * min(35vw, 150px))' }}>
-                            
-                            {/* BAGIAN LOGO 3D MENGAMBANG */}
                             <div className="mb-10 flex justify-center relative perspective-1000">
                                 <div className="logo-frame logo-3d-float glass-panel-elevated relative z-30 bg-background/80 backdrop-blur-2xl">
                                     {WEBSITE_CONFIG.imageUrl || WEBSITE_CONFIG.logoImage ? (
@@ -877,17 +967,13 @@
                                     )}
                                 </div>
                             </div>
-                            
-                            {/* JUDUL HERO DENGAN EFEK TEKS PASKANESS 3D POP 10s */}
                             <h1 className="text-5xl md:text-7xl font-extrabold mb-6 tracking-tight text-on-surface">
                                 {WEBSITE_CONTENT.home.heroTitle} <br/>
                                 <span className="text-gradient animate-pop-10s">{WEBSITE_CONFIG.brandName}</span>
                             </h1>
-                            
                             <p className="text-xl md:text-2xl text-on-surface-variant max-w-3xl mx-auto leading-relaxed mb-12">
                                 {WEBSITE_CONTENT.home.heroSubtitle}
                             </p>
-                            
                             <div className="flex flex-col sm:flex-row gap-4 justify-center">
                                 <button onClick={() => onNavigate('archive')} className="px-10 py-4 bg-primary text-white font-bold rounded-2xl shadow-lg shadow-primary/20 hover:brightness-110 transition-all active:scale-95 text-lg">
                                     Lihat Arsip Kegiatan
@@ -1225,7 +1311,6 @@
 
             return (
                 <div className="min-h-screen flex flex-col relative z-0">
-                    {/* Background Animasi ditaruh di layer paling belakang (Z-[-1]) dan konsisten di semua halaman */}
                     <Background3DObjects />
                     
                     <Navbar activeTab={activeTab} setActiveTab={setActiveTab} isLightMode={isLightMode} toggleTheme={toggleTheme} />
