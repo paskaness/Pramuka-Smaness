@@ -16,12 +16,12 @@
     
     <script src="https://unpkg.com/lucide@latest"></script>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
-        // Menggunakan Realtime Database agar tidak ada masa berlaku 30 hari
-        import { getDatabase, ref, onValue, set, get, update, increment, push } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
-
-        // Kunci API persis dari foto layar laptop Anda
+    <!-- ===== FIREBASE VERSI COMPAT (SOLUSI ANTI BENTROK LOADING) ===== -->
+    <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-database-compat.js"></script>
+    
+    <script>
+        // Inisialisasi Firebase Langsung Secara Sinkron
         const firebaseConfig = {
             apiKey: "AIzaSyBxRCMWxb34jBQvHQwWId8YZ8ugBaH_WJY",
             authDomain: "paskaness.firebaseapp.com",
@@ -30,21 +30,13 @@
             messagingSenderId: "219809083748",
             appId: "1:219809083748:web:c61287aa3ba9f3da638a71",
             measurementId: "G-JCNCNN21HB",
-            // Tambahan wajib untuk Realtime Database
-            databaseURL: "https://paskaness-default-rtdb.asia-southeast1.firebasedatabase.app" 
+            databaseURL: "https://paskaness-default-rtdb.asia-southeast1.firebasedatabase.app"
         };
-
-        // Inisialisasi Firebase & tempelkan ke "window" agar bisa dipakai oleh React Babel
-        const app = initializeApp(firebaseConfig);
-        window.firebaseDb = getDatabase(app);
-        window.firebaseRef = ref;
-        window.firebaseGet = get;
-        window.firebaseSet = set;
-        window.firebaseUpdate = update;
-        window.firebaseIncrement = increment;
-        window.firebaseOnValue = onValue;
-        window.firebasePush = push;
+        firebase.initializeApp(firebaseConfig);
+        // Menyimpan database ke window agar siap dipakai oleh React di bawah
+        window.firebaseDb = firebase.database();
     </script>
+    <!-- ================================================================ -->
     
     <script>
         tailwind.config = {
@@ -108,137 +100,36 @@
         }
 
         @layer utilities {
-            .glass-panel {
-                background: var(--theme-glass);
-                backdrop-filter: blur(16px);
-                border: 1px solid var(--theme-border);
-            }
-            .glass-panel-elevated {
-                background: var(--theme-glass-elevated);
-                backdrop-filter: blur(24px);
-                border: 1px solid var(--theme-border-elevated);
-            }
-            .text-gradient {
-                background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-tertiary) 100%);
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
-            }
-            .logo-frame {
-                width: min(90vw, 400px);
-                max-width: 400px;
-                aspect-ratio: 1 / 1;
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                padding: 0.75rem;
-                background: var(--theme-glass);
-                border: 1px solid var(--theme-border);
-                border-radius: 2rem;
-            }
-            .logo-image {
-                width: 100%;
-                height: 100%;
-                max-width: 400px;
-                max-height: 400px;
-                object-fit: contain;
-                border-radius: 1.5rem;
-            }
-            .logo-icon-fallback {
-                width: min(220px, 100%);
-                height: min(220px, 100%);
-            }
+            .glass-panel { background: var(--theme-glass); backdrop-filter: blur(16px); border: 1px solid var(--theme-border); }
+            .glass-panel-elevated { background: var(--theme-glass-elevated); backdrop-filter: blur(24px); border: 1px solid var(--theme-border-elevated); }
+            .text-gradient { background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-tertiary) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+            .logo-frame { width: min(90vw, 400px); max-width: 400px; aspect-ratio: 1 / 1; display: inline-flex; align-items: center; justify-content: center; padding: 0.75rem; background: var(--theme-glass); border: 1px solid var(--theme-border); border-radius: 2rem; }
+            .logo-image { width: 100%; height: 100%; max-width: 400px; max-height: 400px; object-fit: contain; border-radius: 1.5rem; }
+            .logo-icon-fallback { width: min(220px, 100%); height: min(220px, 100%); }
         }
 
-        body {
-            background-color: var(--theme-bg);
-            color: var(--theme-text);
-            font-family: 'Inter', sans-serif;
-            -webkit-font-smoothing: antialiased;
-            transition: background-color 0.3s ease, color 0.3s ease;
-            overflow-x: hidden; 
-        }
-
+        body { background-color: var(--theme-bg); color: var(--theme-text); font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; transition: background-color 0.3s ease, color 0.3s ease; overflow-x: hidden; }
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: var(--theme-bg); }
         ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #334155; }
 
         .fade-in { animation: fadeIn 0.5s ease-out forwards; }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
         .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
         .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 
-        /* ======== EFEK 3D & ANIMASI ======== */
-        .animate-pop-10s {
-            display: inline-block;
-            transform-style: preserve-3d;
-            animation: text3dPop 10s infinite;
-            position: relative;
-            z-index: 50;
-        }
-
-        @keyframes text3dPop {
-            0%, 90%, 100% {
-                transform: scale(1) translateZ(0) rotateX(0) rotateY(0);
-                text-shadow: none;
-            }
-            92% {
-                transform: scale(1.15) translateZ(40px) rotateX(15deg) rotateY(-15deg);
-                text-shadow: 4px 4px 0 var(--theme-primary), -2px -2px 0 var(--theme-tertiary), 5px 15px 20px rgba(0,0,0,0.6);
-            }
-            96% {
-                transform: scale(1.05) translateZ(20px) rotateX(-5deg) rotateY(10deg);
-                text-shadow: -2px 2px 0 var(--theme-primary), 2px -2px 0 var(--theme-tertiary), -5px 10px 15px rgba(0,0,0,0.4);
-            }
-        }
-
-        .logo-3d-float {
-            transform-style: preserve-3d;
-            animation: float3d 6s ease-in-out infinite;
-        }
-
-        @keyframes float3d {
-            0% { transform: translateY(0) rotateX(5deg) rotateY(-5deg) translateZ(20px); box-shadow: -10px 10px 30px rgba(0,0,0,0.2); }
-            50% { transform: translateY(-20px) rotateX(-5deg) rotateY(5deg) translateZ(50px); box-shadow: 10px 20px 40px var(--theme-border-elevated); }
-            100% { transform: translateY(0) rotateX(5deg) rotateY(-5deg) translateZ(20px); box-shadow: -10px 10px 30px rgba(0,0,0,0.2); }
-        }
-
-        .shape-container {
-            animation: floatBounce 8s ease-in-out infinite alternate;
-        }
-        @keyframes floatBounce {
-            0% { transform: translateY(-20px); }
-            100% { transform: translateY(20px); }
-        }
-
-        .shape-wrapper {
-            transform-style: preserve-3d;
-            transform: rotateX(calc(var(--global-rot) * var(--rot-speed-x))) rotateY(calc(var(--global-rot) * var(--rot-speed-y)));
-        }
-
-        .cube-face {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            border: 1.5px solid currentColor;
-            background: rgba(255, 255, 255, 0.04);
-            backdrop-filter: blur(5px);
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.2);
-            opacity: 0.9;
-        }
-
-        .animate-blob {
-            animation: blobFloat ease-in-out infinite alternate;
-        }
-        @keyframes blobFloat {
-            0% { transform: translate(0, 0) scale(1); }
-            50% { transform: translate(30px, -50px) scale(1.1); }
-            100% { transform: translate(-40px, 30px) scale(0.9); }
-        }
+        .animate-pop-10s { display: inline-block; transform-style: preserve-3d; animation: text3dPop 10s infinite; position: relative; z-index: 50; }
+        @keyframes text3dPop { 0%, 90%, 100% { transform: scale(1) translateZ(0) rotateX(0) rotateY(0); text-shadow: none; } 92% { transform: scale(1.15) translateZ(40px) rotateX(15deg) rotateY(-15deg); text-shadow: 4px 4px 0 var(--theme-primary), -2px -2px 0 var(--theme-tertiary), 5px 15px 20px rgba(0,0,0,0.6); } 96% { transform: scale(1.05) translateZ(20px) rotateX(-5deg) rotateY(10deg); text-shadow: -2px 2px 0 var(--theme-primary), 2px -2px 0 var(--theme-tertiary), -5px 10px 15px rgba(0,0,0,0.4); } }
+        .logo-3d-float { transform-style: preserve-3d; animation: float3d 6s ease-in-out infinite; }
+        @keyframes float3d { 0% { transform: translateY(0) rotateX(5deg) rotateY(-5deg) translateZ(20px); box-shadow: -10px 10px 30px rgba(0,0,0,0.2); } 50% { transform: translateY(-20px) rotateX(-5deg) rotateY(5deg) translateZ(50px); box-shadow: 10px 20px 40px var(--theme-border-elevated); } 100% { transform: translateY(0) rotateX(5deg) rotateY(-5deg) translateZ(20px); box-shadow: -10px 10px 30px rgba(0,0,0,0.2); } }
+        .shape-container { animation: floatBounce 8s ease-in-out infinite alternate; }
+        @keyframes floatBounce { 0% { transform: translateY(-20px); } 100% { transform: translateY(20px); } }
+        .shape-wrapper { transform-style: preserve-3d; transform: rotateX(calc(var(--global-rot) * var(--rot-speed-x))) rotateY(calc(var(--global-rot) * var(--rot-speed-y))); }
+        .cube-face { position: absolute; width: 100%; height: 100%; border: 1.5px solid currentColor; background: rgba(255, 255, 255, 0.04); backdrop-filter: blur(5px); box-shadow: inset 0 0 20px rgba(0,0,0,0.2); opacity: 0.9; }
+        .animate-blob { animation: blobFloat ease-in-out infinite alternate; }
+        @keyframes blobFloat { 0% { transform: translate(0, 0) scale(1); } 50% { transform: translate(30px, -50px) scale(1.1); } 100% { transform: translate(-40px, 30px) scale(0.9); } }
     </style>
 </head>
 <body>
@@ -247,14 +138,11 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo, useCallback, useRef } = React;
 
-        // Image URL helper
         const DRIVE_IMAGE_URL_BASE = 'https://drive.google.com/uc?id=';
         const getDriveUrlFromLink = (url) => {
             if (!url || typeof url !== 'string') return '';
             const match = url.match(/(?:drive\.google\.com\/file\/d\/|drive\.google\.com\/open\?id=|drive\.google\.com\/uc\?id=)([a-zA-Z0-9_-]+)/);
-            if (match && match[1]) {
-                return `${DRIVE_IMAGE_URL_BASE}${match[1]}`;
-            }
+            if (match && match[1]) return `${DRIVE_IMAGE_URL_BASE}${match[1]}`;
             return url;
         };
 
@@ -264,9 +152,7 @@
                 if (data.imageUrl) return getDriveUrlFromLink(data.imageUrl);
                 if (data.image) return data.image;
             }
-            if (typeof data === 'string') {
-                return data.startsWith('http') ? getDriveUrlFromLink(data) : data;
-            }
+            if (typeof data === 'string') return data.startsWith('http') ? getDriveUrlFromLink(data) : data;
             return '';
         };
 
@@ -281,18 +167,12 @@
                     });
                 }
             };
-
             [WEBSITE_CONFIG].forEach(normalize);
             [MEMBERS, ACTIVITIES, PAST_COLLECTIONS].forEach((collection) => {
-                if (Array.isArray(collection)) {
-                    collection.forEach(normalize);
-                }
+                if (Array.isArray(collection)) collection.forEach(normalize);
             });
         };
 
-        // ============================================================
-        // 1. KONFIGURASI UTAMA
-        // ============================================================
         const WEBSITE_CONFIG = {
             brandName: 'PASKANESS',
             logoImage: 'logoo/paskaness.svg',
@@ -304,40 +184,25 @@
         const WEBSITE_CONTENT = {
             home: {
                 heroTitle: 'Jejak Karya dalam',
-                heroSubtitle: `Dokumentasi perjalanan PASKANESS dalam membangun masa depan 
-                    yang berkelanjutan melalui kolaborasi komunitas dan pemberdayaan pemuda.`,
+                heroSubtitle: `Dokumentasi perjalanan PASKANESS dalam membangun masa depan yang berkelanjutan melalui kolaborasi komunitas dan pemberdayaan pemuda.`,
                 visionTitle: 'Visi PASKANESS',
-                visionText: `Menjadi pusat keunggulan yang mampu menginspirasi perubahan positif 
-                    dan melahirkan pemimpin masa depan yang berintegritas tinggi.`,
+                visionText: `Menjadi pusat keunggulan yang mampu menginspirasi perubahan positif dan melahirkan pemimpin masa depan yang berintegritas tinggi.`,
                 missionTitle: 'Misi Utama',
-                missionText: `Mengembangkan potensi anggota melalui pelatihan intensif 
-                    dan jejaring profesional yang berkelanjutan.`,
+                missionText: `Mengembangkan potensi anggota melalui pelatihan intensif dan jejaring profesional yang berkelanjutan.`,
                 highlightTitle: 'Sorotan Kegiatan',
                 highlightSubtitle: 'Mengenang momen inovasi dan aksi nyata yang telah kita lalui bersama.',
             },
             archive: {
                 title: 'Arsip Kegiatan',
-                subtitle: `Menjelajahi rekam jejak perjalanan dan kontribusi kami melalui 
-                    arsip dokumentasi kegiatan yang telah terlaksana.`,
+                subtitle: `Menjelajahi rekam jejak perjalanan dan kontribusi kami melalui arsip dokumentasi kegiatan yang telah terlaksana.`,
                 recentTitle: 'Dokumentasi Terkini',
                 pastTitle: 'Koleksi Masa Lalu',
             },
             structure: {
                 title: 'Struktur Pengurus',
-                subtitle: `Dedikasi dan visi kolektif untuk memajukan PASKANESS melalui 
-                    kepemimpinan yang progresif di setiap masa jabatan.`,
+                subtitle: `Dedikasi dan visi kolektif untuk memajukan PASKANESS melalui kepemimpinan yang progresif di setiap masa jabatan.`,
                 noData: 'Data pengurus untuk periode ini belum tersedia.',
-                categories: {
-                    pimpinan: 'Pimpinan Utama',
-                    pemangkuAdat: 'Pemangku Adat',
-                    sekretariat: 'Kerana & Kerani',
-                    litev: 'Litev',
-                    litbang: 'Litbang',
-                    tekpram: 'Tekpram',
-                    pemateri: 'Pemateri',
-                    juang: 'Juang',
-                    pembina: 'Pembina',
-                }
+                categories: { pimpinan: 'Pimpinan Utama', pemangkuAdat: 'Pemangku Adat', sekretariat: 'Kerana & Kerani', litev: 'Litev', litbang: 'Litbang', tekpram: 'Tekpram', pemateri: 'Pemateri', juang: 'Juang', pembina: 'Pembina' }
             }
         };
 
@@ -467,7 +332,7 @@
 
         normalizeImageSources();
 
-        // ===== 2. FUNGSI FIREBASE (LIKE) =====
+        // ===== FUNGSI FIREBASE MENGGUNAKAN VERSI COMPAT =====
         const useLikes = () => {
             const [userLikes, setUserLikes] = useState(() => {
                 const saved = localStorage.getItem('paskanessUserLikes');
@@ -476,10 +341,9 @@
             const [totalLikes, setTotalLikes] = useState({});
 
             useEffect(() => {
-                // Dengarkan perubahan total like dari Firebase Realtime DB secara real-time
-                if (window.firebaseDb && window.firebaseRef && window.firebaseOnValue) {
-                    const likesRef = window.firebaseRef(window.firebaseDb, 'likes');
-                    const unsubscribe = window.firebaseOnValue(likesRef, (snapshot) => {
+                if (window.firebaseDb) {
+                    const likesRef = window.firebaseDb.ref('likes');
+                    likesRef.on('value', (snapshot) => {
                         if (snapshot.exists()) {
                             const data = snapshot.val();
                             const newTotals = {};
@@ -492,7 +356,7 @@
                             setTotalLikes({});
                         }
                     });
-                    return () => unsubscribe();
+                    return () => likesRef.off();
                 }
             }, []);
 
@@ -513,20 +377,16 @@
                 setUserLikes(newUserLikes);
                 localStorage.setItem('paskanessUserLikes', JSON.stringify(Array.from(newUserLikes)));
 
-                // Update data langsung ke Firebase
                 if (window.firebaseDb) {
-                    const postRefPath = 'likes/post_' + activityId;
-                    const postRef = window.firebaseRef(window.firebaseDb, postRefPath);
+                    const postRef = window.firebaseDb.ref('likes/post_' + activityId);
                     try {
-                        const snap = await window.firebaseGet(postRef);
+                        const snap = await postRef.once('value');
                         if (snap.exists()) {
                             const currentLikes = snap.val().jumlahLike || 0;
                             const newLikeCount = isLiking ? currentLikes + 1 : Math.max(0, currentLikes - 1);
-                            await window.firebaseUpdate(window.firebaseRef(window.firebaseDb, 'likes'), {
-                                [`post_${activityId}/jumlahLike`]: newLikeCount
-                            });
+                            await postRef.update({ jumlahLike: newLikeCount });
                         } else if (isLiking) {
-                            await window.firebaseSet(postRef, { jumlahLike: 1 });
+                            await postRef.set({ jumlahLike: 1 });
                         }
                     } catch (err) {
                         console.error("Firebase Like Error: ", err);
@@ -540,214 +400,6 @@
             return { handleLike, hasUserLiked, getTotalLikes };
         };
 
-        // --- Components ---
-
-        const Icon = ({ name, className }) => {
-            useEffect(() => {
-                if (window.lucide) window.lucide.createIcons();
-            }, [name]);
-            return <i data-lucide={name} className={className}></i>;
-        };
-
-        const Background3DObjects = () => {
-            const requestRef = useRef();
-            const rotationRef = useRef(0);
-
-            useEffect(() => {
-                const handleScroll = () => {
-                    document.documentElement.style.setProperty('--scroll-y', window.scrollY);
-                    rotationRef.current += 1.2; 
-                };
-                window.addEventListener('scroll', handleScroll, { passive: true });
-                document.documentElement.style.setProperty('--scroll-y', window.scrollY);
-
-                const animate = () => {
-                    rotationRef.current += 0.25; 
-                    document.documentElement.style.setProperty('--global-rot', `${rotationRef.current}deg`);
-                    requestRef.current = requestAnimationFrame(animate);
-                };
-                requestRef.current = requestAnimationFrame(animate);
-
-                return () => {
-                    window.removeEventListener('scroll', handleScroll);
-                    cancelAnimationFrame(requestRef.current);
-                };
-            }, []);
-
-            const blobs = useMemo(() => Array.from({ length: 6 }).map((_, i) => ({
-                id: i,
-                left: `${Math.random() * 100}vw`,
-                top: `${Math.random() * 100}vh`,
-                width: `${Math.random() * 300 + 100}px`,
-                height: `${Math.random() * 300 + 100}px`,
-                animDuration: `${Math.random() * 15 + 10}s`,
-                animDelay: `${Math.random() * -20}s`,
-                color: ['#7dd3fc', '#c8a0f0', '#38bdf8', '#a855f7', '#60a5fa'][Math.floor(Math.random() * 5)]
-            })), []);
-
-            const shapesData = useMemo(() => {
-                const shapes = [];
-                for (let i = 0; i < 40; i++) {
-                    shapes.push({
-                        id: i,
-                        type: Math.random() > 0.5 ? 'cube' : 'diamond',
-                        size: Math.random() * 50 + 40,
-                        left: `${Math.random() * 90 + 5}%`,
-                        top: `${(i * 35) + (Math.random() * 20)}vh`,
-                        color: ['var(--theme-primary)', 'var(--theme-tertiary)', '#38bdf8', '#a855f7', '#60a5fa'][Math.floor(Math.random() * 5)],
-                        rotX: (Math.random() - 0.5) * 3,
-                        rotY: (Math.random() - 0.5) * 3,
-                        parallaxSpeed: Math.random() * 0.6 + 0.25 
-                    });
-                }
-                return shapes;
-            }, []);
-
-            const Shape3D = ({ type, size, left, top, color, rotX, rotY, parallaxSpeed }) => {
-                return (
-                    <div className="absolute pointer-events-none z-[-1]" style={{ left, top }}>
-                        <div style={{ transform: `translateY(calc(var(--scroll-y) * ${parallaxSpeed} * 1px))` }}>
-                            <div className="shape-container" style={{ width: size, height: size, perspective: '1000px', '--rot-speed-x': rotX, '--rot-speed-y': rotY, color }}>
-                                {type === 'cube' && (
-                                    <div className="shape-wrapper w-full h-full relative">
-                                        <div className="cube-face" style={{ transform: `translateZ(${size/2}px)` }}></div>
-                                        <div className="cube-face" style={{ transform: `rotateY(180deg) translateZ(${size/2}px)` }}></div>
-                                        <div className="cube-face" style={{ transform: `rotateY(90deg) translateZ(${size/2}px)` }}></div>
-                                        <div className="cube-face" style={{ transform: `rotateY(-90deg) translateZ(${size/2}px)` }}></div>
-                                        <div className="cube-face" style={{ transform: `rotateX(90deg) translateZ(${size/2}px)` }}></div>
-                                        <div className="cube-face" style={{ transform: `rotateX(-90deg) translateZ(${size/2}px)` }}></div>
-                                    </div>
-                                )}
-                                {type === 'diamond' && (
-                                    <div className="shape-wrapper w-full h-full relative" style={{ transform: 'rotateZ(45deg) rotateX(calc(var(--global-rot) * var(--rot-speed-x))) rotateY(calc(var(--global-rot) * var(--rot-speed-y)))' }}>
-                                        <div className="cube-face" style={{ transform: `translateZ(${size/2}px)` }}></div>
-                                        <div className="cube-face" style={{ transform: `rotateY(180deg) translateZ(${size/2}px)` }}></div>
-                                        <div className="cube-face" style={{ transform: `rotateY(90deg) translateZ(${size/2}px)` }}></div>
-                                        <div className="cube-face" style={{ transform: `rotateY(-90deg) translateZ(${size/2}px)` }}></div>
-                                        <div className="cube-face" style={{ transform: `rotateX(90deg) translateZ(${size/2}px)` }}></div>
-                                        <div className="cube-face" style={{ transform: `rotateX(-90deg) translateZ(${size/2}px)` }}></div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                );
-            }
-
-            return (
-                <>
-                    <div className="fixed inset-0 overflow-hidden pointer-events-none z-[-2]">
-                        {blobs.map(b => (
-                            <div key={`blob-${b.id}`} className="absolute rounded-full opacity-20 dark:opacity-30 mix-blend-screen filter blur-[80px] animate-blob"
-                                 style={{ left: b.left, top: b.top, width: b.width, height: b.height, background: b.color, animationDuration: b.animDuration, animationDelay: b.animDelay }} />
-                        ))}
-                    </div>
-                    <div className="absolute inset-0 pointer-events-none z-[-1] overflow-hidden" style={{ minHeight: '100vh' }}>
-                        {shapesData.map(shape => <Shape3D key={shape.id} {...shape} />)}
-                    </div>
-                </>
-            );
-        };
-
-        const Navbar = ({ activeTab, setActiveTab, isLightMode, toggleTheme }) => {
-            const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-            return (
-                <nav className="fixed top-0 w-full z-50 bg-[var(--theme-nav)] backdrop-blur-lg border-b border-sky-400/10 transition-colors duration-300">
-                    <div className="flex justify-between items-center px-8 py-4 max-w-7xl mx-auto">
-                        <div className="text-2xl font-semibold text-primary tracking-wider flex gap-2 items-center">
-                            {WEBSITE_CONFIG.brandName}
-                        </div>
-                        <div className="hidden md:flex items-center space-x-8 font-medium tracking-tight">
-                                {[
-                                    { id: 'home', label: 'Beranda', icon: 'home' },
-                                    { id: 'archive', label: 'Arsip Kegiatan', icon: 'history' },
-                                    { id: 'structure', label: 'Struktur Pengurus', icon: 'users' },
-                                ].map((tab) => (
-                                    <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                                        className={`transition-colors duration-300 px-2 py-1 rounded relative ${
-                                            activeTab === tab.id ? "text-primary" : "text-on-surface-variant hover:text-primary hover:bg-sky-400/10"
-                                        }`}>
-                                        <i data-lucide={tab.icon} className="w-4 h-4 inline mr-1"></i>
-                                        {tab.label}
-                                        {activeTab === tab.id && (
-                                            <div className="absolute -bottom-4 left-0 right-0 h-0.5 bg-primary"></div>
-                                        )}
-                                    </button>
-                                ))}
-                                <button onClick={toggleTheme} className="ml-4 p-2 text-on-surface-variant hover:text-primary transition-colors rounded-full glass-panel flex items-center justify-center">
-                                    <Icon name={isLightMode ? "moon" : "sun"} className="w-4 h-4" />
-                                </button>
-                        </div>
-                        <div className="md:hidden flex items-center gap-4">
-                            <button onClick={toggleTheme} className="p-2 text-on-surface-variant hover:text-primary transition-colors rounded-full glass-panel flex items-center justify-center">
-                                <Icon name={isLightMode ? "moon" : "sun"} className="w-4 h-4" />
-                            </button>
-                            <button 
-                                className="text-on-surface-variant hover:text-primary transition-colors"
-                                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                            >
-                                <Icon name={isMobileMenuOpen ? "x" : "menu"} className="w-6 h-6" />
-                            </button>
-                        </div>
-                    </div>
-                    {isMobileMenuOpen && (
-                        <div className="md:hidden bg-[var(--theme-nav-mobile)] backdrop-blur-lg border-t border-sky-400/10 transition-colors duration-300">
-                            <div className="px-8 py-4 space-y-4">
-                                {[
-                                    { id: 'home', label: 'Beranda', icon: 'home' },
-                                    { id: 'archive', label: 'Arsip Kegiatan', icon: 'history' },
-                                    { id: 'structure', label: 'Struktur Pengurus', icon: 'users' },
-                                ].map((tab) => (
-                                    <button key={tab.id} 
-                                        onClick={() => {
-                                            setActiveTab(tab.id);
-                                            setIsMobileMenuOpen(false);
-                                        }}
-                                        className={`flex items-center gap-3 w-full text-left px-4 py-3 rounded-lg transition-colors ${
-                                            activeTab === tab.id ? "bg-primary/20 text-primary" : "text-on-surface-variant hover:text-primary hover:bg-primary/10"
-                                        }`}
-                                    >
-                                        <Icon name={tab.icon} className="w-5 h-5" />
-                                        {tab.label}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                </nav>
-            );
-        };
-
-        const Footer = () => (
-            <footer className="bg-background w-full py-12 border-t border-sky-400/10 mt-20 transition-colors duration-300 relative z-10">
-                <div className="flex flex-col md:flex-row justify-between items-center px-8 max-w-7xl mx-auto text-center md:text-left gap-6">
-                    <div className="mb-4 md:mb-0">
-                        <div className="text-xl font-bold text-primary mb-2">{WEBSITE_CONFIG.brandName}</div>
-                        <p className="text-on-surface-variant text-sm">{WEBSITE_CONFIG.footerText}</p>
-                    </div>
-                    <div className="flex gap-4">
-                        <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="w-12 h-12 glass-panel rounded-full flex items-center justify-center cursor-pointer hover:bg-primary hover:text-white transition-all shadow-lg hover:-translate-y-1 group">
-                            <svg className="w-5 h-5 fill-none stroke-current text-on-surface-variant group-hover:text-white transition-colors" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
-                                <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
-                                <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
-                                <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
-                            </svg>
-                        </a>
-                        <a href="https://tiktok.com" target="_blank" rel="noopener noreferrer" className="w-12 h-12 glass-panel rounded-full flex items-center justify-center cursor-pointer hover:bg-primary hover:text-white transition-all shadow-lg hover:-translate-y-1 group">
-                            <svg className="w-5 h-5 fill-current text-on-surface-variant group-hover:text-white transition-colors" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.24-2.61.85-5.28 2.82-6.95 1.51-1.31 3.52-1.92 5.51-1.74v4.06c-1.07-.16-2.18.06-3.06.66-.99.64-1.66 1.76-1.71 2.96-.06 1.16.41 2.34 1.25 3.15.93.93 2.36 1.3 3.65.92 1.48-.41 2.5-1.89 2.52-3.45.04-5.32.01-10.64.02-15.96z"/>
-                            </svg>
-                        </a>
-                        <a href="mailto:email@example.com" className="w-12 h-12 glass-panel rounded-full flex items-center justify-center cursor-pointer hover:bg-primary hover:text-white transition-all shadow-lg hover:-translate-y-1">
-                            <Icon name="mail" className="w-5 h-5 text-on-surface-variant" />
-                        </a>
-                    </div>
-                </div>
-            </footer>
-        );
-
-        // ===== 3. FITUR KOMENTAR =====
         const CommentsSection = ({ activityId }) => {
             const [comments, setComments] = useState([]);
             const [name, setName] = useState('');
@@ -755,21 +407,19 @@
 
             useEffect(() => {
                 if (!activityId || !window.firebaseDb) return;
-                const commentsRef = window.firebaseRef(window.firebaseDb, `comments/post_${activityId}`);
+                const commentsRef = window.firebaseDb.ref(`comments/post_${activityId}`);
                 
-                // Ambil data komentar real-time dari Firebase
-                const unsubscribe = window.firebaseOnValue(commentsRef, (snapshot) => {
+                commentsRef.on('value', (snapshot) => {
                     if (snapshot.exists()) {
                         const data = snapshot.val();
                         const commentsArray = Object.keys(data).map(key => ({ id: key, ...data[key] }));
-                        // Mengurutkan komentar agar yang terbaru ada di atas
                         commentsArray.sort((a, b) => b.timestamp - a.timestamp);
                         setComments(commentsArray);
                     } else {
                         setComments([]);
                     }
                 });
-                return () => unsubscribe();
+                return () => commentsRef.off();
             }, [activityId]);
 
             const handleSubmit = async (e) => {
@@ -777,14 +427,13 @@
                 if (!name.trim() || !text.trim() || !window.firebaseDb) return;
                 
                 try {
-                    const commentsRef = window.firebaseRef(window.firebaseDb, `comments/post_${activityId}`);
-                    const newCommentRef = window.firebasePush(commentsRef); // Buat ID unik acak
-                    await window.firebaseSet(newCommentRef, {
+                    const commentsRef = window.firebaseDb.ref(`comments/post_${activityId}`);
+                    await commentsRef.push({
                         name: name.trim(),
                         text: text.trim(),
                         timestamp: Date.now()
                     });
-                    setText(''); // Kosongkan kotak teks setelah terkirim
+                    setText('');
                 } catch (err) {
                     console.error("Gagal kirim komentar", err);
                 }
@@ -795,30 +444,11 @@
                     <h3 className="text-lg font-bold text-on-surface mb-4 flex items-center gap-2">
                         <Icon name="message-square" className="w-5 h-5 text-primary" /> Komentar ({comments.length})
                     </h3>
-                    
-                    {/* Form Input Komentar */}
                     <form onSubmit={handleSubmit} className="mb-6 space-y-3">
-                        <input 
-                            type="text" 
-                            placeholder="Nama Anda" 
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            className="w-full bg-background/50 border border-primary/20 rounded-lg px-4 py-2 text-sm text-on-surface focus:outline-none focus:border-primary transition-colors"
-                            required
-                        />
-                        <textarea 
-                            placeholder="Tuliskan kesan atau tanggapan Anda..." 
-                            value={text}
-                            onChange={(e) => setText(e.target.value)}
-                            className="w-full bg-background/50 border border-primary/20 rounded-lg px-4 py-2 text-sm text-on-surface focus:outline-none focus:border-primary transition-colors resize-none h-20"
-                            required
-                        ></textarea>
-                        <button type="submit" className="px-5 py-2 bg-primary text-white text-sm font-bold rounded-lg hover:opacity-90 transition-all flex items-center gap-2">
-                            <Icon name="send" className="w-4 h-4" /> Kirim Komentar
-                        </button>
+                        <input type="text" placeholder="Nama Anda" value={name} onChange={(e) => setName(e.target.value)} className="w-full bg-background/50 border border-primary/20 rounded-lg px-4 py-2 text-sm text-on-surface focus:outline-none focus:border-primary transition-colors" required />
+                        <textarea placeholder="Tuliskan kesan atau tanggapan Anda..." value={text} onChange={(e) => setText(e.target.value)} className="w-full bg-background/50 border border-primary/20 rounded-lg px-4 py-2 text-sm text-on-surface focus:outline-none focus:border-primary transition-colors resize-none h-20" required ></textarea>
+                        <button type="submit" className="px-5 py-2 bg-primary text-white text-sm font-bold rounded-lg hover:opacity-90 transition-all flex items-center gap-2"><Icon name="send" className="w-4 h-4" /> Kirim Komentar</button>
                     </form>
-
-                    {/* Daftar List Komentar */}
                     <div className="space-y-4 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
                         {comments.length === 0 ? (
                             <p className="text-on-surface-variant text-sm text-center italic py-4">Belum ada komentar. Jadilah yang pertama!</p>
@@ -838,94 +468,114 @@
             );
         };
 
+        // --- Komponen Antarmuka Tampilan ---
+
+        const Icon = ({ name, className }) => {
+            useEffect(() => { if (window.lucide) window.lucide.createIcons(); }, [name]);
+            return <i data-lucide={name} className={className}></i>;
+        };
+
+        const Background3DObjects = () => {
+            const requestRef = useRef();
+            const rotationRef = useRef(0);
+
+            useEffect(() => {
+                const handleScroll = () => { document.documentElement.style.setProperty('--scroll-y', window.scrollY); rotationRef.current += 1.2; };
+                window.addEventListener('scroll', handleScroll, { passive: true });
+                document.documentElement.style.setProperty('--scroll-y', window.scrollY);
+                const animate = () => { rotationRef.current += 0.25; document.documentElement.style.setProperty('--global-rot', `${rotationRef.current}deg`); requestRef.current = requestAnimationFrame(animate); };
+                requestRef.current = requestAnimationFrame(animate);
+                return () => { window.removeEventListener('scroll', handleScroll); cancelAnimationFrame(requestRef.current); };
+            }, []);
+
+            const blobs = useMemo(() => Array.from({ length: 6 }).map((_, i) => ({ id: i, left: `${Math.random() * 100}vw`, top: `${Math.random() * 100}vh`, width: `${Math.random() * 300 + 100}px`, height: `${Math.random() * 300 + 100}px`, animDuration: `${Math.random() * 15 + 10}s`, animDelay: `${Math.random() * -20}s`, color: ['#7dd3fc', '#c8a0f0', '#38bdf8', '#a855f7', '#60a5fa'][Math.floor(Math.random() * 5)] })), []);
+            const shapesData = useMemo(() => { const shapes = []; for (let i = 0; i < 40; i++) { shapes.push({ id: i, type: Math.random() > 0.5 ? 'cube' : 'diamond', size: Math.random() * 50 + 40, left: `${Math.random() * 90 + 5}%`, top: `${(i * 35) + (Math.random() * 20)}vh`, color: ['var(--theme-primary)', 'var(--theme-tertiary)', '#38bdf8', '#a855f7', '#60a5fa'][Math.floor(Math.random() * 5)], rotX: (Math.random() - 0.5) * 3, rotY: (Math.random() - 0.5) * 3, parallaxSpeed: Math.random() * 0.6 + 0.25 }); } return shapes; }, []);
+
+            const Shape3D = ({ type, size, left, top, color, rotX, rotY, parallaxSpeed }) => (
+                <div className="absolute pointer-events-none z-[-1]" style={{ left, top }}>
+                    <div style={{ transform: `translateY(calc(var(--scroll-y) * ${parallaxSpeed} * 1px))` }}>
+                        <div className="shape-container" style={{ width: size, height: size, perspective: '1000px', '--rot-speed-x': rotX, '--rot-speed-y': rotY, color }}>
+                            {type === 'cube' && ( <div className="shape-wrapper w-full h-full relative"> <div className="cube-face" style={{ transform: `translateZ(${size/2}px)` }}></div> <div className="cube-face" style={{ transform: `rotateY(180deg) translateZ(${size/2}px)` }}></div> <div className="cube-face" style={{ transform: `rotateY(90deg) translateZ(${size/2}px)` }}></div> <div className="cube-face" style={{ transform: `rotateY(-90deg) translateZ(${size/2}px)` }}></div> <div className="cube-face" style={{ transform: `rotateX(90deg) translateZ(${size/2}px)` }}></div> <div className="cube-face" style={{ transform: `rotateX(-90deg) translateZ(${size/2}px)` }}></div> </div> )}
+                            {type === 'diamond' && ( <div className="shape-wrapper w-full h-full relative" style={{ transform: 'rotateZ(45deg) rotateX(calc(var(--global-rot) * var(--rot-speed-x))) rotateY(calc(var(--global-rot) * var(--rot-speed-y)))' }}> <div className="cube-face" style={{ transform: `translateZ(${size/2}px)` }}></div> <div className="cube-face" style={{ transform: `rotateY(180deg) translateZ(${size/2}px)` }}></div> <div className="cube-face" style={{ transform: `rotateY(90deg) translateZ(${size/2}px)` }}></div> <div className="cube-face" style={{ transform: `rotateY(-90deg) translateZ(${size/2}px)` }}></div> <div className="cube-face" style={{ transform: `rotateX(90deg) translateZ(${size/2}px)` }}></div> <div className="cube-face" style={{ transform: `rotateX(-90deg) translateZ(${size/2}px)` }}></div> </div> )}
+                        </div>
+                    </div>
+                </div>
+            );
+
+            return (
+                <>
+                    <div className="fixed inset-0 overflow-hidden pointer-events-none z-[-2]"> {blobs.map(b => ( <div key={`blob-${b.id}`} className="absolute rounded-full opacity-20 dark:opacity-30 mix-blend-screen filter blur-[80px] animate-blob" style={{ left: b.left, top: b.top, width: b.width, height: b.height, background: b.color, animationDuration: b.animDuration, animationDelay: b.animDelay }} /> ))} </div>
+                    <div className="absolute inset-0 pointer-events-none z-[-1] overflow-hidden" style={{ minHeight: '100vh' }}> {shapesData.map(shape => <Shape3D key={shape.id} {...shape} />)} </div>
+                </>
+            );
+        };
+
+        const Navbar = ({ activeTab, setActiveTab, isLightMode, toggleTheme }) => {
+            const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+            return (
+                <nav className="fixed top-0 w-full z-50 bg-[var(--theme-nav)] backdrop-blur-lg border-b border-sky-400/10 transition-colors duration-300">
+                    <div className="flex justify-between items-center px-8 py-4 max-w-7xl mx-auto">
+                        <div className="text-2xl font-semibold text-primary tracking-wider flex gap-2 items-center">{WEBSITE_CONFIG.brandName}</div>
+                        <div className="hidden md:flex items-center space-x-8 font-medium tracking-tight">
+                            {[{ id: 'home', label: 'Beranda', icon: 'home' }, { id: 'archive', label: 'Arsip Kegiatan', icon: 'history' }, { id: 'structure', label: 'Struktur Pengurus', icon: 'users' }].map((tab) => (
+                                <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`transition-colors duration-300 px-2 py-1 rounded relative ${ activeTab === tab.id ? "text-primary" : "text-on-surface-variant hover:text-primary hover:bg-sky-400/10" }`}> <i data-lucide={tab.icon} className="w-4 h-4 inline mr-1"></i> {tab.label} {activeTab === tab.id && ( <div className="absolute -bottom-4 left-0 right-0 h-0.5 bg-primary"></div> )} </button>
+                            ))}
+                            <button onClick={toggleTheme} className="ml-4 p-2 text-on-surface-variant hover:text-primary transition-colors rounded-full glass-panel flex items-center justify-center"> <Icon name={isLightMode ? "moon" : "sun"} className="w-4 h-4" /> </button>
+                        </div>
+                        <div className="md:hidden flex items-center gap-4">
+                            <button onClick={toggleTheme} className="p-2 text-on-surface-variant hover:text-primary transition-colors rounded-full glass-panel flex items-center justify-center"> <Icon name={isLightMode ? "moon" : "sun"} className="w-4 h-4" /> </button>
+                            <button className="text-on-surface-variant hover:text-primary transition-colors" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}> <Icon name={isMobileMenuOpen ? "x" : "menu"} className="w-6 h-6" /> </button>
+                        </div>
+                    </div>
+                    {isMobileMenuOpen && (
+                        <div className="md:hidden bg-[var(--theme-nav-mobile)] backdrop-blur-lg border-t border-sky-400/10 transition-colors duration-300">
+                            <div className="px-8 py-4 space-y-4">
+                                {[{ id: 'home', label: 'Beranda', icon: 'home' }, { id: 'archive', label: 'Arsip Kegiatan', icon: 'history' }, { id: 'structure', label: 'Struktur Pengurus', icon: 'users' }].map((tab) => (
+                                    <button key={tab.id} onClick={() => { setActiveTab(tab.id); setIsMobileMenuOpen(false); }} className={`flex items-center gap-3 w-full text-left px-4 py-3 rounded-lg transition-colors ${ activeTab === tab.id ? "bg-primary/20 text-primary" : "text-on-surface-variant hover:text-primary hover:bg-primary/10" }`} > <Icon name={tab.icon} className="w-5 h-5" /> {tab.label} </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </nav>
+            );
+        };
+
+        const Footer = () => (
+            <footer className="bg-background w-full py-12 border-t border-sky-400/10 mt-20 transition-colors duration-300 relative z-10">
+                <div className="flex flex-col md:flex-row justify-between items-center px-8 max-w-7xl mx-auto text-center md:text-left gap-6">
+                    <div className="mb-4 md:mb-0"> <div className="text-xl font-bold text-primary mb-2">{WEBSITE_CONFIG.brandName}</div> <p className="text-on-surface-variant text-sm">{WEBSITE_CONFIG.footerText}</p> </div>
+                    <div className="flex gap-4">
+                        <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="w-12 h-12 glass-panel rounded-full flex items-center justify-center cursor-pointer hover:bg-primary hover:text-white transition-all shadow-lg hover:-translate-y-1 group"> <svg className="w-5 h-5 fill-none stroke-current text-on-surface-variant group-hover:text-white transition-colors" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg"> <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect> <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path> <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line> </svg> </a>
+                        <a href="https://tiktok.com" target="_blank" rel="noopener noreferrer" className="w-12 h-12 glass-panel rounded-full flex items-center justify-center cursor-pointer hover:bg-primary hover:text-white transition-all shadow-lg hover:-translate-y-1 group"> <svg className="w-5 h-5 fill-current text-on-surface-variant group-hover:text-white transition-colors" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"> <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.24-2.61.85-5.28 2.82-6.95 1.51-1.31 3.52-1.92 5.51-1.74v4.06c-1.07-.16-2.18.06-3.06.66-.99.64-1.66 1.76-1.71 2.96-.06 1.16.41 2.34 1.25 3.15.93.93 2.36 1.3 3.65.92 1.48-.41 2.5-1.89 2.52-3.45.04-5.32.01-10.64.02-15.96z"/> </svg> </a>
+                        <a href="mailto:email@example.com" className="w-12 h-12 glass-panel rounded-full flex items-center justify-center cursor-pointer hover:bg-primary hover:text-white transition-all shadow-lg hover:-translate-y-1"> <Icon name="mail" className="w-5 h-5 text-on-surface-variant" /> </a>
+                    </div>
+                </div>
+            </footer>
+        );
+
         const ActivityModal = ({ activity, onClose }) => {
             if (!activity) return null;
             return (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8">
                     <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={onClose}></div>
                     <div className="glass-panel-elevated w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl relative z-10 animate-in fade-in zoom-in duration-300">
-                        <button onClick={onClose} className="absolute top-6 right-6 p-2 rounded-full bg-black/10 hover:bg-black/20 dark:bg-white/5 dark:hover:bg-white/10 transition-colors z-20">
-                            <Icon name="x" className="w-6 h-6" />
-                        </button>
+                        <button onClick={onClose} className="absolute top-6 right-6 p-2 rounded-full bg-black/10 hover:bg-black/20 dark:bg-white/5 dark:hover:bg-white/10 transition-colors z-20"> <Icon name="x" className="w-6 h-6" /> </button>
                         <div className="flex flex-col md:flex-row">
-                            <div className="md:w-1/2 h-64 md:h-auto relative">
-                                <img src={getImageUrl(activity)} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                            </div>
+                            <div className="md:w-1/2 h-64 md:h-auto relative"> <img src={getImageUrl(activity)} className="w-full h-full object-cover" referrerPolicy="no-referrer" /> </div>
                             <div className="md:w-1/2 p-8 md:p-12">
-                                <div className="flex items-center gap-3 mb-6">
-                                    <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold tracking-widest uppercase">
-                                        {activity.status || activity.category}
-                                    </span>
-                                    <span className="text-on-surface-variant text-sm font-medium">{activity.date || 'Arsip'}</span>
-                                </div>
+                                <div className="flex items-center gap-3 mb-6"> <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold tracking-widest uppercase"> {activity.status || activity.category} </span> <span className="text-on-surface-variant text-sm font-medium">{activity.date || 'Arsip'}</span> </div>
                                 <h2 className="text-3xl md:text-4xl font-bold mb-6 tracking-tight leading-tight text-on-surface">{activity.title}</h2>
                                 <div className="space-y-6 mb-8">
-                                    <div className="flex items-start gap-4">
-                                        <div className="p-2 rounded-lg bg-primary/5"><Icon name="map-pin" className="w-5 h-5 text-primary" /></div>
-                                        <div>
-                                            <p className="text-xs text-on-surface-variant font-bold uppercase tracking-widest mb-1">Lokasi</p>
-                                            <p className="text-on-surface">{activity.location || 'Lokasi tidak tersedia'}</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-start gap-4">
-                                        <div className="p-2 rounded-lg bg-primary/5"><Icon name="info" className="w-5 h-5 text-primary" /></div>
-                                        <div>
-                                            <p className="text-xs text-on-surface-variant font-bold uppercase tracking-widest mb-1">Deskripsi</p>
-                                            <p className="text-on-surface-variant leading-relaxed">{activity.description}</p>
-                                        </div>
-                                    </div>
+                                    <div className="flex items-start gap-4"> <div className="p-2 rounded-lg bg-primary/5"><Icon name="map-pin" className="w-5 h-5 text-primary" /></div> <div> <p className="text-xs text-on-surface-variant font-bold uppercase tracking-widest mb-1">Lokasi</p> <p className="text-on-surface">{activity.location || 'Lokasi tidak tersedia'}</p> </div> </div>
+                                    <div className="flex items-start gap-4"> <div className="p-2 rounded-lg bg-primary/5"><Icon name="info" className="w-5 h-5 text-primary" /></div> <div> <p className="text-xs text-on-surface-variant font-bold uppercase tracking-widest mb-1">Deskripsi</p> <p className="text-on-surface-variant leading-relaxed">{activity.description}</p> </div> </div>
                                     {activity.documentation && activity.documentation.length > 0 && (
-                                        <div className="flex items-start gap-4">
-                                            <div className="p-2 rounded-lg bg-primary/5"><Icon name="file-text" className="w-5 h-5 text-primary" /></div>
-                                            <div className="w-full">
-                                                <p className="text-xs text-on-surface-variant font-bold uppercase tracking-widest mb-3 border-b-2 border-primary">Dokumentasi</p>
-                                                <div className="space-y-2">
-                                                    {activity.documentation.filter(doc => doc.title.toLowerCase().includes('foto') || doc.title.toLowerCase().includes('galeri') || doc.title.toLowerCase().includes('album')).map((doc, index) => (
-                                                        <a 
-                                                            key={index} 
-                                                            href={doc.link} 
-                                                            target="_blank" 
-                                                            rel="noopener noreferrer"
-                                                            className="flex items-center gap-2 p-3 rounded-lg bg-primary text-white hover:opacity-90 transition-colors group"
-                                                        >
-                                                            <Icon name="external-link" className="w-4 h-4 text-white group-hover:scale-110 transition-transform" />
-                                                            <span className="text-white group-hover:text-white transition-colors">Foto Dokumentasi</span>
-                                                        </a>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        </div>
+                                        <div className="flex items-start gap-4"> <div className="p-2 rounded-lg bg-primary/5"><Icon name="file-text" className="w-5 h-5 text-primary" /></div> <div className="w-full"> <p className="text-xs text-on-surface-variant font-bold uppercase tracking-widest mb-3 border-b-2 border-primary">Dokumentasi</p> <div className="space-y-2"> {activity.documentation.filter(doc => doc.title.toLowerCase().includes('foto') || doc.title.toLowerCase().includes('galeri') || doc.title.toLowerCase().includes('album')).map((doc, index) => ( <a key={index} href={doc.link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-3 rounded-lg bg-primary text-white hover:opacity-90 transition-colors group" > <Icon name="external-link" className="w-4 h-4 text-white group-hover:scale-110 transition-transform" /> <span className="text-white group-hover:text-white transition-colors">Foto Dokumentasi</span> </a> ))} </div> </div> </div>
                                     )}
                                 </div>
                                 <div className="flex gap-3">
-                                    <button 
-                                        onClick={() => {
-                                            const shareUrl = `${window.location.origin}${window.location.pathname}#activity-${activity.id}`;
-                                            const shareText = `Lihat dokumentasi kegiatan: ${activity.title}`;
-                                            if (navigator.share) {
-                                                navigator.share({
-                                                    title: activity.title,
-                                                    text: shareText,
-                                                    url: shareUrl
-                                                });
-                                            } else {
-                                                navigator.clipboard.writeText(`${shareText} ${shareUrl}`);
-                                                alert('Link berhasil disalin ke clipboard!');
-                                            }
-                                        }}
-                                        className="flex-1 py-4 rounded-xl glass-panel text-primary font-bold hover:bg-primary/10 transition-all shadow-lg shadow-primary/10 flex items-center justify-center gap-2"
-                                    >
-                                        <Icon name="share-2" className="w-5 h-5" />
-                                        Bagikan
-                                    </button>
-                                    {(!activity.documentation || activity.documentation.length === 0) && (
-                                        <button className="flex-1 py-4 rounded-xl bg-primary text-white font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20">
-                                            Lihat Dokumentasi
-                                        </button>
-                                    )}
+                                    <button onClick={() => { const shareUrl = `${window.location.origin}${window.location.pathname}#activity-${activity.id}`; const shareText = `Lihat dokumentasi kegiatan: ${activity.title}`; if (navigator.share) { navigator.share({ title: activity.title, text: shareText, url: shareUrl }); } else { navigator.clipboard.writeText(`${shareText} ${shareUrl}`); alert('Link berhasil disalin ke clipboard!'); } }} className="flex-1 py-4 rounded-xl glass-panel text-primary font-bold hover:bg-primary/10 transition-all shadow-lg shadow-primary/10 flex items-center justify-center gap-2" > <Icon name="share-2" className="w-5 h-5" /> Bagikan </button>
+                                    {(!activity.documentation || activity.documentation.length === 0) && ( <button className="flex-1 py-4 rounded-xl bg-primary text-white font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20"> Lihat Dokumentasi </button> )}
                                 </div>
-                                
-                                {/* MEMANGGIL FITUR KOMENTAR DI BAWAH DETAIL POSTINGAN */}
                                 <CommentsSection activityId={activity.id} />
                             </div>
                         </div>
@@ -937,126 +587,18 @@
         const HomePage = ({ onNavigate }) => {
             const [selectedActivity, setSelectedActivity] = useState(null);
             const { handleLike, hasUserLiked, getTotalLikes } = useLikes(); 
-
             return (
                 <div className="fade-in pb-12">
-                    <div className="relative w-full h-64 md:h-[400px] overflow-hidden z-0 border-b border-white/5">
-                        <div className="absolute inset-0 w-full h-full" style={{ transform: `translateY(calc(var(--scroll-y) * 0.4 * 1px))` }}>
-                            <img 
-                                src={WEBSITE_CONFIG.bannerImage} 
-                                alt="Banner Profile" 
-                                className="absolute top-0 left-0 w-full h-[140%] object-cover object-center" 
-                                style={{ transform: `translateY(-20%)` }}
-                            />
-                        </div>
-                        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-background"></div>
-                    </div>
-
-                    <section className="relative flex flex-col items-center justify-center px-6 z-10 perspective-1000">
-                        <div className="relative z-20 max-w-5xl mx-auto text-center w-full" style={{ marginTop: 'calc(-1 * min(35vw, 150px))' }}>
-                            <div className="mb-10 flex justify-center relative perspective-1000">
-                                <div className="logo-frame logo-3d-float glass-panel-elevated relative z-30 bg-background/80 backdrop-blur-2xl">
-                                    {WEBSITE_CONFIG.imageUrl || WEBSITE_CONFIG.logoImage ? (
-                                        <img 
-                                            src={WEBSITE_CONFIG.imageUrl || WEBSITE_CONFIG.logoImage} 
-                                            alt={`${WEBSITE_CONFIG.brandName} Logo`}
-                                            className="logo-image bg-transparent"
-                                        />
-                                    ) : (
-                                        <Icon name="image" className="logo-icon-fallback text-primary bg-transparent" />
-                                    )}
-                                </div>
-                            </div>
-                            <h1 className="text-5xl md:text-7xl font-extrabold mb-6 tracking-tight text-on-surface">
-                                {WEBSITE_CONTENT.home.heroTitle} <br/>
-                                <span className="text-gradient animate-pop-10s">{WEBSITE_CONFIG.brandName}</span>
-                            </h1>
-                            <p className="text-xl md:text-2xl text-on-surface-variant max-w-3xl mx-auto leading-relaxed mb-12">
-                                {WEBSITE_CONTENT.home.heroSubtitle}
-                            </p>
-                            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                                <button onClick={() => onNavigate('archive')} className="px-10 py-4 bg-primary text-white font-bold rounded-2xl shadow-lg shadow-primary/20 hover:brightness-110 transition-all active:scale-95 text-lg">
-                                    Lihat Arsip Kegiatan
-                                </button>
-                                <button className="px-10 py-4 glass-panel text-primary font-bold rounded-2xl hover:bg-primary/10 transition-all active:scale-95 text-lg">
-                                    Pelajari Visi Kami
-                                </button>
-                            </div>
-                        </div>
-                    </section>
-
-                    <section className="max-w-7xl mx-auto px-8 py-32 mt-10 relative z-10">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                            <div className="md:col-span-2 glass-panel p-12 rounded-3xl relative overflow-hidden group hover:shadow-[0_20px_40px_rgba(125,211,252,0.1)] transition-all duration-500">
-                                <div className="absolute top-0 right-0 p-8 text-primary/5 group-hover:text-primary/10 transition-colors duration-500">
-                                    <Icon name="eye" className="w-40 h-40 transform group-hover:scale-110 group-hover:rotate-12 transition-transform duration-700" />
-                                </div>
-                                <h2 className="text-4xl font-bold text-primary mb-6">{WEBSITE_CONTENT.home.visionTitle}</h2>
-                                <p className="text-xl text-on-surface-variant leading-relaxed max-w-xl relative z-10">{WEBSITE_CONTENT.home.visionText}</p>
-                            </div>
-                            <div className="glass-panel p-10 rounded-3xl flex flex-col justify-between hover:translate-y-[-10px] transition-transform duration-500">
-                                <div className="space-y-6">
-                                    <div className="w-14 h-14 bg-tertiary/10 rounded-2xl flex items-center justify-center border border-tertiary/20">
-                                        <Icon name="rocket" className="w-7 h-7 text-tertiary" />
-                                    </div>
-                                    <h3 className="text-2xl font-bold text-on-surface">{WEBSITE_CONTENT.home.missionTitle}</h3>
-                                    <p className="text-on-surface-variant">{WEBSITE_CONTENT.home.missionText}</p>
-                                </div>
-                                <div className="mt-10 pt-8 border-t border-white/5">
-                                    <div className="flex items-center gap-3 text-tertiary font-bold cursor-pointer group">
-                                        <span>Lihat Selengkapnya</span>
-                                        <Icon name="arrow-right" className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-
+                    <div className="relative w-full h-64 md:h-[400px] overflow-hidden z-0 border-b border-white/5"> <div className="absolute inset-0 w-full h-full" style={{ transform: `translateY(calc(var(--scroll-y) * 0.4 * 1px))` }}> <img src={WEBSITE_CONFIG.bannerImage} alt="Banner Profile" className="absolute top-0 left-0 w-full h-[140%] object-cover object-center" style={{ transform: `translateY(-20%)` }} /> </div> <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-background"></div> </div>
+                    <section className="relative flex flex-col items-center justify-center px-6 z-10 perspective-1000"> <div className="relative z-20 max-w-5xl mx-auto text-center w-full" style={{ marginTop: 'calc(-1 * min(35vw, 150px))' }}> <div className="mb-10 flex justify-center relative perspective-1000"> <div className="logo-frame logo-3d-float glass-panel-elevated relative z-30 bg-background/80 backdrop-blur-2xl"> {WEBSITE_CONFIG.imageUrl || WEBSITE_CONFIG.logoImage ? ( <img src={WEBSITE_CONFIG.imageUrl || WEBSITE_CONFIG.logoImage} alt={`${WEBSITE_CONFIG.brandName} Logo`} className="logo-image bg-transparent" /> ) : ( <Icon name="image" className="logo-icon-fallback text-primary bg-transparent" /> )} </div> </div> <h1 className="text-5xl md:text-7xl font-extrabold mb-6 tracking-tight text-on-surface"> {WEBSITE_CONTENT.home.heroTitle} <br/> <span className="text-gradient animate-pop-10s">{WEBSITE_CONFIG.brandName}</span> </h1> <p className="text-xl md:text-2xl text-on-surface-variant max-w-3xl mx-auto leading-relaxed mb-12"> {WEBSITE_CONTENT.home.heroSubtitle} </p> <div className="flex flex-col sm:flex-row gap-4 justify-center"> <button onClick={() => onNavigate('archive')} className="px-10 py-4 bg-primary text-white font-bold rounded-2xl shadow-lg shadow-primary/20 hover:brightness-110 transition-all active:scale-95 text-lg"> Lihat Arsip Kegiatan </button> <button className="px-10 py-4 glass-panel text-primary font-bold rounded-2xl hover:bg-primary/10 transition-all active:scale-95 text-lg"> Pelajari Visi Kami </button> </div> </div> </section>
+                    <section className="max-w-7xl mx-auto px-8 py-32 mt-10 relative z-10"> <div className="grid grid-cols-1 md:grid-cols-3 gap-8"> <div className="md:col-span-2 glass-panel p-12 rounded-3xl relative overflow-hidden group hover:shadow-[0_20px_40px_rgba(125,211,252,0.1)] transition-all duration-500"> <div className="absolute top-0 right-0 p-8 text-primary/5 group-hover:text-primary/10 transition-colors duration-500"> <Icon name="eye" className="w-40 h-40 transform group-hover:scale-110 group-hover:rotate-12 transition-transform duration-700" /> </div> <h2 className="text-4xl font-bold text-primary mb-6">{WEBSITE_CONTENT.home.visionTitle}</h2> <p className="text-xl text-on-surface-variant leading-relaxed max-w-xl relative z-10">{WEBSITE_CONTENT.home.visionText}</p> </div> <div className="glass-panel p-10 rounded-3xl flex flex-col justify-between hover:translate-y-[-10px] transition-transform duration-500"> <div className="space-y-6"> <div className="w-14 h-14 bg-tertiary/10 rounded-2xl flex items-center justify-center border border-tertiary/20"> <Icon name="rocket" className="w-7 h-7 text-tertiary" /> </div> <h3 className="text-2xl font-bold text-on-surface">{WEBSITE_CONTENT.home.missionTitle}</h3> <p className="text-on-surface-variant">{WEBSITE_CONTENT.home.missionText}</p> </div> <div className="mt-10 pt-8 border-t border-white/5"> <div className="flex items-center gap-3 text-tertiary font-bold cursor-pointer group"> <span>Lihat Selengkapnya</span> <Icon name="arrow-right" className="w-5 h-5 group-hover:translate-x-2 transition-transform" /> </div> </div> </div> </div> </section>
                     <section className="max-w-7xl mx-auto px-8 pb-24 relative z-10">
-                        <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
-                            <div>
-                                <h2 className="text-4xl font-bold mb-4 text-on-surface">{WEBSITE_CONTENT.home.highlightTitle}</h2>
-                                <p className="text-on-surface-variant text-lg">{WEBSITE_CONTENT.home.highlightSubtitle}</p>
-                            </div>
-                            <button onClick={() => onNavigate('archive')} className="text-primary border-2 border-primary/30 font-bold px-8 py-3 rounded-full hover:bg-primary hover:text-white transition-all">
-                                Arsip Lengkap
-                            </button>
-                        </div>
+                        <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6"> <div> <h2 className="text-4xl font-bold mb-4 text-on-surface">{WEBSITE_CONTENT.home.highlightTitle}</h2> <p className="text-on-surface-variant text-lg">{WEBSITE_CONTENT.home.highlightSubtitle}</p> </div> <button onClick={() => onNavigate('archive')} className="text-primary border-2 border-primary/30 font-bold px-8 py-3 rounded-full hover:bg-primary hover:text-white transition-all"> Arsip Lengkap </button> </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                             {ACTIVITIES.map((activity) => (
                                 <div key={activity.id} onClick={() => setSelectedActivity(activity)} className="glass-panel rounded-3xl overflow-hidden group cursor-pointer hover:shadow-[0_15px_40px_rgba(125,211,252,0.15)] hover:translate-y-[-5px] transition-all duration-500">
-                                    <div className="h-56 overflow-hidden relative">
-                                        <img src={getImageUrl(activity)} alt={activity.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" referrerPolicy="no-referrer" />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                                        <div className="absolute top-4 left-4 glass-panel-elevated px-4 py-1.5 rounded-xl text-xs font-bold text-primary">{activity.date}</div>
-                                    </div>
-                                    <div className="p-8">
-                                        <div className="flex items-center justify-between mb-4 gap-3">
-                                            <h3 className="text-2xl font-bold text-on-surface group-hover:text-primary transition-colors">{activity.title}</h3>
-                                            {activity.category && (
-                                                <span className="rounded-full bg-primary/10 px-3 py-1 text-xs uppercase tracking-wider text-primary font-bold">
-                                                    {activity.category}
-                                                </span>
-                                            )}
-                                        </div>
-                                        <p className="text-on-surface-variant text-sm mb-6 line-clamp-2 leading-relaxed">{activity.description}</p>
-                                        <div className="flex items-center justify-between pt-4 border-t border-white/5">
-                                            <div className="flex items-center gap-2 text-on-surface-variant text-sm"><Icon name="map-pin" className="w-4 h-4 text-primary" /><span>{activity.location}</span></div>
-                                            <div className="flex items-center gap-4">
-                                                <button 
-                                                    onClick={(e) => handleLike(activity.id, e)}
-                                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-bold transition-all ${
-                                                        hasUserLiked(activity.id) 
-                                                        ? 'bg-red-500/20 text-red-400' 
-                                                        : 'bg-black/5 dark:bg-white/5 text-on-surface-variant hover:bg-red-500/10 hover:text-red-400'
-                                                    }`}
-                                                >
-                                                    <Icon name="heart" className={`w-4 h-4 ${hasUserLiked(activity.id) ? 'fill-current' : ''}`} />
-                                                    <span>{getTotalLikes(activity.id) || activity.likes || 0}</span>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <div className="h-56 overflow-hidden relative"> <img src={getImageUrl(activity)} alt={activity.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" referrerPolicy="no-referrer" /> <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div> <div className="absolute top-4 left-4 glass-panel-elevated px-4 py-1.5 rounded-xl text-xs font-bold text-primary">{activity.date}</div> </div>
+                                    <div className="p-8"> <div className="flex items-center justify-between mb-4 gap-3"> <h3 className="text-2xl font-bold text-on-surface group-hover:text-primary transition-colors">{activity.title}</h3> {activity.category && ( <span className="rounded-full bg-primary/10 px-3 py-1 text-xs uppercase tracking-wider text-primary font-bold"> {activity.category} </span> )} </div> <p className="text-on-surface-variant text-sm mb-6 line-clamp-2 leading-relaxed">{activity.description}</p> <div className="flex items-center justify-between pt-4 border-t border-white/5"> <div className="flex items-center gap-2 text-on-surface-variant text-sm"><Icon name="map-pin" className="w-4 h-4 text-primary" /><span>{activity.location}</span></div> <div className="flex items-center gap-4"> <button onClick={(e) => handleLike(activity.id, e)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-bold transition-all ${ hasUserLiked(activity.id) ? 'bg-red-500/20 text-red-400' : 'bg-black/5 dark:bg-white/5 text-on-surface-variant hover:bg-red-500/10 hover:text-red-400' }`} > <Icon name="heart" className={`w-4 h-4 ${hasUserLiked(activity.id) ? 'fill-current' : ''}`} /> <span>{getTotalLikes(activity.id) || activity.likes || 0}</span> </button> </div> </div> </div>
                                 </div>
                             ))}
                         </div>
@@ -1069,80 +611,27 @@
         const ArchivePage = () => {
             const [selectedActivity, setSelectedActivity] = useState(null);
             const { handleLike, hasUserLiked, getTotalLikes } = useLikes();
-
             return (
                 <div className="pt-32 pb-20 px-6 max-w-7xl mx-auto fade-in">
-                    <header className="mb-16 text-center relative z-10">
-                        <h1 className="text-5xl md:text-6xl font-extrabold text-on-surface tracking-tight mb-4">
-                            {WEBSITE_CONTENT.archive.title.split(' ')[0]} <span className="text-primary">{WEBSITE_CONTENT.archive.title.split(' ')[1]}</span>
-                        </h1>
-                        <p className="text-on-surface-variant max-w-2xl mx-auto text-lg">{WEBSITE_CONTENT.archive.subtitle}</p>
-                    </header>
-
+                    <header className="mb-16 text-center relative z-10"> <h1 className="text-5xl md:text-6xl font-extrabold text-on-surface tracking-tight mb-4"> {WEBSITE_CONTENT.archive.title.split(' ')[0]} <span className="text-primary">{WEBSITE_CONTENT.archive.title.split(' ')[1]}</span> </h1> <p className="text-on-surface-variant max-w-2xl mx-auto text-lg">{WEBSITE_CONTENT.archive.subtitle}</p> </header>
                     <section className="mb-24 relative z-10">
-                        <div className="flex items-center gap-3 mb-10">
-                            <Icon name="history" className="text-primary w-8 h-8" />
-                            <h2 className="text-3xl font-bold tracking-tight text-on-surface">{WEBSITE_CONTENT.archive.recentTitle}</h2>
-                        </div>
+                        <div className="flex items-center gap-3 mb-10"> <Icon name="history" className="text-primary w-8 h-8" /> <h2 className="text-3xl font-bold tracking-tight text-on-surface">{WEBSITE_CONTENT.archive.recentTitle}</h2> </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                             {ACTIVITIES.map((activity) => (
                                 <div key={activity.id} onClick={() => setSelectedActivity(activity)} className="glass-panel rounded-xl overflow-hidden group hover:shadow-[0_0_30px_rgba(125,211,252,0.1)] transition-all duration-500 cursor-pointer">
-                                    <div className="h-56 w-full overflow-hidden relative">
-                                        <img src={getImageUrl(activity)} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" referrerPolicy="no-referrer" />
-                                        <div className="absolute top-4 left-4 glass-panel-elevated px-3 py-1 rounded-full text-xs font-bold text-on-surface-variant tracking-widest uppercase">{activity.status}</div>
-                                    </div>
-                                    <div className="p-8">
-                                        <div className="flex items-center gap-2 text-primary text-sm font-medium mb-3"><Icon name="calendar" className="w-4 h-4" />{activity.date}</div>
-                                        <h3 className="text-xl font-bold text-on-surface mb-3 group-hover:text-primary transition-colors">{activity.title}</h3>
-                                        <p className="text-on-surface-variant text-sm leading-relaxed mb-6 line-clamp-3">{activity.description}</p>
-                                        <div className="flex items-center justify-between gap-3">
-                                            <button 
-                                                onClick={(e) => handleLike(activity.id, e)}
-                                                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                                                    hasUserLiked(activity.id) 
-                                                    ? 'bg-red-500/20 text-red-400' 
-                                                    : 'bg-black/5 dark:bg-white/5 text-on-surface-variant hover:bg-red-500/10 hover:text-red-400'
-                                                }`}
-                                            >
-                                                <Icon name="heart" className={`w-4 h-4 ${hasUserLiked(activity.id) ? 'fill-current' : ''}`} />
-                                                <span>{getTotalLikes(activity.id) || activity.likes || 0}</span>
-                                            </button>
-                                            <div className="w-full py-3 rounded-lg border border-primary/30 text-primary font-semibold glass-panel-elevated group-hover:bg-primary/20 transition-all duration-300 flex items-center justify-center gap-2">
-                                                <Icon name="eye" className="w-4 h-4" />Lihat Detail
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <div className="h-56 w-full overflow-hidden relative"> <img src={getImageUrl(activity)} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" referrerPolicy="no-referrer" /> <div className="absolute top-4 left-4 glass-panel-elevated px-3 py-1 rounded-full text-xs font-bold text-on-surface-variant tracking-widest uppercase">{activity.status}</div> </div>
+                                    <div className="p-8"> <div className="flex items-center gap-2 text-primary text-sm font-medium mb-3"><Icon name="calendar" className="w-4 h-4" />{activity.date}</div> <h3 className="text-xl font-bold text-on-surface mb-3 group-hover:text-primary transition-colors">{activity.title}</h3> <p className="text-on-surface-variant text-sm leading-relaxed mb-6 line-clamp-3">{activity.description}</p> <div className="flex items-center justify-between gap-3"> <button onClick={(e) => handleLike(activity.id, e)} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${ hasUserLiked(activity.id) ? 'bg-red-500/20 text-red-400' : 'bg-black/5 dark:bg-white/5 text-on-surface-variant hover:bg-red-500/10 hover:text-red-400' }`} > <Icon name="heart" className={`w-4 h-4 ${hasUserLiked(activity.id) ? 'fill-current' : ''}`} /> <span>{getTotalLikes(activity.id) || activity.likes || 0}</span> </button> <div className="w-full py-3 rounded-lg border border-primary/30 text-primary font-semibold glass-panel-elevated group-hover:bg-primary/20 transition-all duration-300 flex items-center justify-center gap-2"> <Icon name="eye" className="w-4 h-4" />Lihat Detail </div> </div> </div>
                                 </div>
                             ))}
                         </div>
                     </section>
-
                     <section className="mb-24 relative z-10">
-                        <div className="flex items-center gap-3 mb-10">
-                            <Icon name="history" className="text-on-surface-variant w-8 h-8" />
-                            <h2 className="text-3xl font-bold tracking-tight text-on-surface">{WEBSITE_CONTENT.archive.pastTitle}</h2>
-                        </div>
+                        <div className="flex items-center gap-3 mb-10"> <Icon name="history" className="text-on-surface-variant w-8 h-8" /> <h2 className="text-3xl font-bold tracking-tight text-on-surface">{WEBSITE_CONTENT.archive.pastTitle}</h2> </div>
                         <div className="grid grid-cols-1 md:grid-cols-4 md:grid-rows-2 gap-6">
                             {PAST_COLLECTIONS.map((item, idx) => (
                                 <div key={item.id} onClick={() => setSelectedActivity({ ...item, status: 'Arsip', location: 'N/A' })} className={`glass-panel rounded-xl overflow-hidden group relative min-h-[300px] cursor-pointer ${idx === 0 ? "md:col-span-2 md:row-span-2" : idx === 1 ? "md:col-span-2 md:row-span-1" : "md:col-span-1 md:row-span-1"}`}>
-                                    <img src={getImageUrl(item)} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" referrerPolicy="no-referrer" />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
-                                    <div className="absolute bottom-0 left-0 p-8 w-full">
-                                        <div className="text-primary text-xs font-bold mb-2 tracking-[0.2em] uppercase">{item.category}</div>
-                                        <h3 className="text-2xl font-bold mb-3 text-white">{item.title}</h3>
-                                        <p className="text-slate-200 text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-500 mb-4">{item.description}</p>
-                                        <button 
-                                            onClick={(e) => handleLike(item.id, e)}
-                                            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                                                hasUserLiked(item.id) 
-                                                ? 'bg-red-500/20 text-red-400' 
-                                                : 'bg-white/10 text-white hover:bg-red-500/20 hover:text-red-400'
-                                            }`}
-                                        >
-                                            <Icon name="heart" className={`w-4 h-4 ${hasUserLiked(item.id) ? 'fill-current' : ''}`} />
-                                            <span>{getTotalLikes(item.id) || item.likes || 0}</span>
-                                        </button>
-                                    </div>
+                                    <img src={getImageUrl(item)} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" referrerPolicy="no-referrer" /> <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
+                                    <div className="absolute bottom-0 left-0 p-8 w-full"> <div className="text-primary text-xs font-bold mb-2 tracking-[0.2em] uppercase">{item.category}</div> <h3 className="text-2xl font-bold mb-3 text-white">{item.title}</h3> <p className="text-slate-200 text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-500 mb-4">{item.description}</p> <button onClick={(e) => handleLike(item.id, e)} className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${ hasUserLiked(item.id) ? 'bg-red-500/20 text-red-400' : 'bg-white/10 text-white hover:bg-red-500/20 hover:text-red-400' }`} > <Icon name="heart" className={`w-4 h-4 ${hasUserLiked(item.id) ? 'fill-current' : ''}`} /> <span>{getTotalLikes(item.id) || item.likes || 0}</span> </button> </div>
                                 </div>
                             ))}
                         </div>
@@ -1155,108 +644,29 @@
         const StructurePage = () => {
             const [activePeriod, setActivePeriod] = useState(AVAILABLE_PERIODS[0]);
             const filteredMembers = useMemo(() => MEMBERS.filter(m => m.period === activePeriod), [activePeriod]);
-
             const grouped = useMemo(() => {
-                return {
-                    ketua: filteredMembers.find(m => m.role === 'Ketua'),
-                    wakil: filteredMembers.find(m => m.role === 'Wakil Ketua'),
-                    pemangkuAdat: filteredMembers.filter(m => 
-                        m.role === 'Pemangku Adat 1' || m.role === 'Pemangku Adat 2' || m.role === 'Pemangku Adat 3' ),
-                    sekretariat: filteredMembers.filter(m => 
-                        m.role === 'Kerana (CO)' || m.role === 'Kerani (Wakil)' ||
-                        m.role === 'Kerana' || m.role === 'Kerani'),
-                    juang: filteredMembers.filter(m => m.role === 'Juang'||
-                        m.role === 'Juang (CO)'|| m.role === 'Juang (Wakil)'),
-                    litev: filteredMembers.filter(m => m.role === 'Litev' || 
-                        m.role === 'Litev (CO)' || m.role === 'Litev (Wakil)'),
-                    litbang: filteredMembers.filter(m => m.role === 'Litbang' || 
-                        m.role === 'Litbang (CO)' || m.role === 'Litbang (Wakil)'),
-                    tekpram: filteredMembers.filter(m => m.role === 'Tekpram' || 
-                        m.role === 'Tekpram (CO)' || m.role === 'Tekpram (Wakil)'),
-                    pemateri: filteredMembers.filter(m => m.role === 'Pemateri' || 
-                        m.role === 'Pemateri (CO)' || m.role === 'Pemateri (Wakil)'),
-                    departemen: filteredMembers.filter(m => m.role === 'buangan')
-                };
+                return { ketua: filteredMembers.find(m => m.role === 'Ketua'), wakil: filteredMembers.find(m => m.role === 'Wakil Ketua'), pemangkuAdat: filteredMembers.filter(m => m.role === 'Pemangku Adat 1' || m.role === 'Pemangku Adat 2' || m.role === 'Pemangku Adat 3' ), sekretariat: filteredMembers.filter(m => m.role === 'Kerana (CO)' || m.role === 'Kerani (Wakil)' || m.role === 'Kerana' || m.role === 'Kerani'), juang: filteredMembers.filter(m => m.role === 'Juang'|| m.role === 'Juang (CO)'|| m.role === 'Juang (Wakil)'), litev: filteredMembers.filter(m => m.role === 'Litev' || m.role === 'Litev (CO)' || m.role === 'Litev (Wakil)'), litbang: filteredMembers.filter(m => m.role === 'Litbang' || m.role === 'Litbang (CO)' || m.role === 'Litbang (Wakil)'), tekpram: filteredMembers.filter(m => m.role === 'Tekpram' || m.role === 'Tekpram (CO)' || m.role === 'Tekpram (Wakil)'), pemateri: filteredMembers.filter(m => m.role === 'Pemateri' || m.role === 'Pemateri (CO)' || m.role === 'Pemateri (Wakil)'), departemen: filteredMembers.filter(m => m.role === 'buangan') };
             }, [filteredMembers]);
 
-            const MemberCard = ({ member, colorClass = "text-primary" }) => (
-                <div className="glass-panel p-6 rounded-2xl text-center hover:translate-y-[-8px] hover:shadow-[0_10px_30px_rgba(0,0,0,0.1)] transition-all duration-300 group">
-                    <div className="overflow-hidden rounded-xl mb-4">
-                        <img src={getImageUrl(member)} className="w-24 h-24 mx-auto object-cover border border-black/5 dark:border-white/10 group-hover:scale-110 transition-transform duration-500" referrerPolicy="no-referrer" />
-                    </div>
-                    <p className={`text-xs font-bold uppercase tracking-widest mb-1 ${colorClass}`}>{member.role}</p>
-                    <p className="text-lg font-semibold text-on-surface">{member.name}</p>
-                </div>
-            );
-
+            const MemberCard = ({ member, colorClass = "text-primary" }) => ( <div className="glass-panel p-6 rounded-2xl text-center hover:translate-y-[-8px] hover:shadow-[0_10px_30px_rgba(0,0,0,0.1)] transition-all duration-300 group"> <div className="overflow-hidden rounded-xl mb-4"> <img src={getImageUrl(member)} className="w-24 h-24 mx-auto object-cover border border-black/5 dark:border-white/10 group-hover:scale-110 transition-transform duration-500" referrerPolicy="no-referrer" /> </div> <p className={`text-xs font-bold uppercase tracking-widest mb-1 ${colorClass}`}>{member.role}</p> <p className="text-lg font-semibold text-on-surface">{member.name}</p> </div> );
             const RoleSection = ({ title, members, colorClass }) => {
                 if (members.length === 0) return null;
-                return (
-                    <div className="mb-24 relative z-10">
-                        <h3 className="text-2xl font-bold text-on-surface mb-10 flex items-center gap-3">
-                            <span className={`w-12 h-[2px] ${colorClass.replace('text-', 'bg-')}`}></span>{title}
-                        </h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                            {members.map(member => <MemberCard key={member.id} member={member} colorClass={colorClass} />)}
-                        </div>
-                    </div>
-                );
+                return ( <div className="mb-24 relative z-10"> <h3 className="text-2xl font-bold text-on-surface mb-10 flex items-center gap-3"> <span className={`w-12 h-[2px] ${colorClass.replace('text-', 'bg-')}`}></span>{title} </h3> <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"> {members.map(member => <MemberCard key={member.id} member={member} colorClass={colorClass} />)} </div> </div> );
             };
 
             return (
                 <div className="pt-32 pb-20 px-6 max-w-7xl mx-auto fade-in">
-                    <header className="text-center mb-16 relative z-10">
-                        <h1 className="text-5xl md:text-6xl font-extrabold text-on-surface tracking-tight mb-6">
-                            {WEBSITE_CONTENT.structure.title.split(' ')[0]} <span className="text-primary">{WEBSITE_CONTENT.structure.title.split(' ')[1]}</span>
-                        </h1>
-                        <p className="text-on-surface-variant max-w-2xl mx-auto text-lg">{WEBSITE_CONTENT.structure.subtitle}</p>
-                    </header>
-
-                    <div className="flex flex-col items-center mb-20 relative z-10">
-                        <div className="glass-panel p-1.5 rounded-full flex gap-1 inline-flex overflow-x-auto max-w-full">
-                            {AVAILABLE_PERIODS.map((period) => (
-                                <button key={period} onClick={() => setActivePeriod(period)} className={`px-8 py-3 rounded-full text-sm font-bold transition-all duration-300 whitespace-nowrap ${activePeriod === period ? "bg-primary/15 border border-primary/40 text-primary shadow-[0_0_20px_rgba(125,211,252,0.1)]" : "text-on-surface-variant hover:text-primary hover:bg-black/5 dark:hover:bg-white/5"}`}>
-                                    Periode {period}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
+                    <header className="text-center mb-16 relative z-10"> <h1 className="text-5xl md:text-6xl font-extrabold text-on-surface tracking-tight mb-6"> {WEBSITE_CONTENT.structure.title.split(' ')[0]} <span className="text-primary">{WEBSITE_CONTENT.structure.title.split(' ')[1]}</span> </h1> <p className="text-on-surface-variant max-w-2xl mx-auto text-lg">{WEBSITE_CONTENT.structure.subtitle}</p> </header>
+                    <div className="flex flex-col items-center mb-20 relative z-10"> <div className="glass-panel p-1.5 rounded-full flex gap-1 inline-flex overflow-x-auto max-w-full"> {AVAILABLE_PERIODS.map((period) => ( <button key={period} onClick={() => setActivePeriod(period)} className={`px-8 py-3 rounded-full text-sm font-bold transition-all duration-300 whitespace-nowrap ${activePeriod === period ? "bg-primary/15 border border-primary/40 text-primary shadow-[0_0_20px_rgba(125,211,252,0.1)]" : "text-on-surface-variant hover:text-primary hover:bg-black/5 dark:hover:bg-white/5"}`}> Periode {period} </button> ))} </div> </div>
                     {filteredMembers.length === 0 ? (
-                        <div className="glass-panel p-12 rounded-3xl text-center w-full relative z-10">
-                            <Icon name="users" className="w-16 h-16 text-on-surface-variant mx-auto mb-4 opacity-20" />
-                            <p className="text-on-surface-variant text-xl">{WEBSITE_CONTENT.structure.noData}</p>
-                        </div>
+                        <div className="glass-panel p-12 rounded-3xl text-center w-full relative z-10"> <Icon name="users" className="w-16 h-16 text-on-surface-variant mx-auto mb-4 opacity-20" /> <p className="text-on-surface-variant text-xl">{WEBSITE_CONTENT.structure.noData}</p> </div>
                     ) : (
                         <>
                             {grouped.ketua && (
-                                <div className="mb-24 relative z-10">
-                                    <h3 className="text-2xl font-bold text-on-surface mb-10 flex items-center gap-3"><span className="w-12 h-[2px] bg-primary"></span>{WEBSITE_CONTENT.structure.categories.pimpinan}</h3>
+                                <div className="mb-24 relative z-10"> <h3 className="text-2xl font-bold text-on-surface mb-10 flex items-center gap-3"><span className="w-12 h-[2px] bg-primary"></span>{WEBSITE_CONTENT.structure.categories.pimpinan}</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                                        <div className="md:col-span-8 glass-panel rounded-3xl p-8 flex flex-col md:flex-row items-center gap-8 group hover:shadow-[0_0_30px_rgba(125,211,252,0.15)] transition-all duration-500">
-                                            <div className="overflow-hidden rounded-2xl">
-                                                <img src={getImageUrl(grouped.ketua)} className="w-48 h-48 md:w-64 md:h-64 object-cover border-2 border-primary/20 group-hover:scale-110 transition-transform duration-700" referrerPolicy="no-referrer" />
-                                            </div>
-                                            <div className="text-center md:text-left flex-1">
-                                                <span className="inline-block px-4 py-1 rounded-full bg-primary/10 text-primary text-sm font-semibold mb-4 tracking-widest uppercase">Ketua</span>
-                                                <h2 className="text-4xl font-bold text-on-surface mb-3 tracking-tight">{grouped.ketua.name}</h2>
-                                                <p className="text-on-surface-variant text-lg leading-relaxed mb-6 italic">"{grouped.ketua.quote || 'Membangun masa depan bersama.'}"</p>
-                                                <div className="flex justify-center md:justify-start gap-4">
-                                                    <Icon name="link" className="text-primary cursor-pointer hover:scale-125 transition-transform" />
-                                                    <Icon name="mail" className="text-primary cursor-pointer hover:scale-125 transition-transform" />
-                                                </div>
-                                            </div>
-                                        </div>
-                                        {grouped.wakil && (
-                                            <div className="md:col-span-4 glass-panel rounded-3xl p-8 flex flex-col items-center justify-center text-center group hover:shadow-[0_0_30px_rgba(168,85,247,0.15)] transition-all duration-500">
-                                                <div className="overflow-hidden rounded-full mb-6">
-                                                    <img src={getImageUrl(grouped.wakil)} className="w-40 h-40 object-cover border-2 border-purple-500/20 group-hover:scale-110 transition-transform duration-700" referrerPolicy="no-referrer" />
-                                                </div>
-                                                <span className="px-3 py-1 rounded-full bg-purple-500/10 text-tertiary text-xs font-bold mb-3 tracking-widest uppercase">Wakil Ketua</span>
-                                                <h3 className="text-2xl font-bold text-on-surface">{grouped.wakil.name}</h3>
-                                                <p className="text-on-surface-variant text-lg leading-relaxed mb-6 italic">"{grouped.wakil.quote || 'Membangun masa depan bersama.'}"</p>
-                                            </div>
-                                        )}
+                                        <div className="md:col-span-8 glass-panel rounded-3xl p-8 flex flex-col md:flex-row items-center gap-8 group hover:shadow-[0_0_30px_rgba(125,211,252,0.15)] transition-all duration-500"> <div className="overflow-hidden rounded-2xl"> <img src={getImageUrl(grouped.ketua)} className="w-48 h-48 md:w-64 md:h-64 object-cover border-2 border-primary/20 group-hover:scale-110 transition-transform duration-700" referrerPolicy="no-referrer" /> </div> <div className="text-center md:text-left flex-1"> <span className="inline-block px-4 py-1 rounded-full bg-primary/10 text-primary text-sm font-semibold mb-4 tracking-widest uppercase">Ketua</span> <h2 className="text-4xl font-bold text-on-surface mb-3 tracking-tight">{grouped.ketua.name}</h2> <p className="text-on-surface-variant text-lg leading-relaxed mb-6 italic">"{grouped.ketua.quote || 'Membangun masa depan bersama.'}"</p> <div className="flex justify-center md:justify-start gap-4"> <Icon name="link" className="text-primary cursor-pointer hover:scale-125 transition-transform" /> <Icon name="mail" className="text-primary cursor-pointer hover:scale-125 transition-transform" /> </div> </div> </div>
+                                        {grouped.wakil && ( <div className="md:col-span-4 glass-panel rounded-3xl p-8 flex flex-col items-center justify-center text-center group hover:shadow-[0_0_30px_rgba(168,85,247,0.15)] transition-all duration-500"> <div className="overflow-hidden rounded-full mb-6"> <img src={getImageUrl(grouped.wakil)} className="w-40 h-40 object-cover border-2 border-purple-500/20 group-hover:scale-110 transition-transform duration-700" referrerPolicy="no-referrer" /> </div> <span className="px-3 py-1 rounded-full bg-purple-500/10 text-tertiary text-xs font-bold mb-3 tracking-widest uppercase">Wakil Ketua</span> <h3 className="text-2xl font-bold text-on-surface">{grouped.wakil.name}</h3> <p className="text-on-surface-variant text-lg leading-relaxed mb-6 italic">"{grouped.wakil.quote || 'Membangun masa depan bersama.'}"</p> </div> )}
                                     </div>
                                 </div>
                             )}
@@ -1267,14 +677,7 @@
                             <RoleSection title={WEBSITE_CONTENT.structure.categories.litbang} members={grouped.litbang} colorClass="text-primary" />
                             <RoleSection title={WEBSITE_CONTENT.structure.categories.tekpram} members={grouped.tekpram} colorClass="text-primary" />
                             <RoleSection title={WEBSITE_CONTENT.structure.categories.pemateri} members={grouped.pemateri} colorClass="text-primary" />
-                            {grouped.departemen.length > 0 && (
-                                <div className="mb-24 relative z-10">
-                                    <h3 className="text-2xl font-bold text-on-surface mb-10 flex items-center gap-3"><span className="w-12 h-[2px] bg-primary"></span>{WEBSITE_CONTENT.structure.categories.departemen}</h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                                        {grouped.departemen.map(member => <MemberCard key={member.id} member={member} colorClass={member.role.includes('Bakat') ? "text-tertiary" : "text-primary"} />)}
-                                    </div>
-                                </div>
-                            )}
+                            {grouped.departemen.length > 0 && ( <div className="mb-24 relative z-10"> <h3 className="text-2xl font-bold text-on-surface mb-10 flex items-center gap-3"><span className="w-12 h-[2px] bg-primary"></span>{WEBSITE_CONTENT.structure.categories.departemen}</h3> <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"> {grouped.departemen.map(member => <MemberCard key={member.id} member={member} colorClass={member.role.includes('Bakat') ? "text-tertiary" : "text-primary"} />)} </div> </div> )}
                         </>
                     )}
                 </div>
@@ -1283,36 +686,20 @@
 
         function App() {
             const [activeTab, setActiveTab] = useState('home');
-            
-            const [isLightMode, setIsLightMode] = useState(() => {
-                return localStorage.getItem('paskanessTheme') === 'light';
-            });
+            const [isLightMode, setIsLightMode] = useState(() => localStorage.getItem('paskanessTheme') === 'light');
 
             useEffect(() => {
-                if (isLightMode) {
-                    document.documentElement.classList.add('light-mode');
-                    localStorage.setItem('paskanessTheme', 'light');
-                } else {
-                    document.documentElement.classList.remove('light-mode');
-                    localStorage.setItem('paskanessTheme', 'dark');
-                }
+                if (isLightMode) { document.documentElement.classList.add('light-mode'); localStorage.setItem('paskanessTheme', 'light'); } 
+                else { document.documentElement.classList.remove('light-mode'); localStorage.setItem('paskanessTheme', 'dark'); }
             }, [isLightMode]);
 
             const toggleTheme = () => setIsLightMode(!isLightMode);
-
-            useEffect(() => {
-                document.title = `${WEBSITE_CONFIG.brandName} - Jejak Karya & Arsip`;
-            }, []);
-
-            useEffect(() => {
-                window.scrollTo(0, 0);
-                if (window.lucide) window.lucide.createIcons();
-            }, [activeTab]);
+            useEffect(() => { document.title = `${WEBSITE_CONFIG.brandName} - Jejak Karya & Arsip`; }, []);
+            useEffect(() => { window.scrollTo(0, 0); if (window.lucide) window.lucide.createIcons(); }, [activeTab]);
 
             return (
                 <div className="min-h-screen flex flex-col relative z-0">
                     <Background3DObjects />
-                    
                     <Navbar activeTab={activeTab} setActiveTab={setActiveTab} isLightMode={isLightMode} toggleTheme={toggleTheme} />
                     <main className="flex-grow">
                         {activeTab === 'home' && <HomePage onNavigate={setActiveTab} />}
