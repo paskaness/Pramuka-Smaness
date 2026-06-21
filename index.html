@@ -16,28 +16,46 @@
     
     <script src="https://unpkg.com/lucide@latest"></script>
 
-    <!-- ===== FIREBASE VERSI COMPAT (SOLUSI ANTI BENTROK LOADING) ===== -->
     <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-auth-compat.js"></script>
     
     <script>
-        // Inisialisasi Firebase Langsung Secara Sinkron
-        const firebaseConfig = {
+        // --- KONFIGURASI KUNCI FIREBASE ANDA ---
+        const baseConfig = {
             apiKey: "AIzaSyBxRCMWxb34jBQvHQwWId8YZ8ugBaH_WJY",
             authDomain: "paskaness.firebaseapp.com",
             projectId: "paskaness",
             storageBucket: "paskaness.firebasestorage.app",
             messagingSenderId: "219809083748",
             appId: "1:219809083748:web:c61287aa3ba9f3da638a71",
-            measurementId: "G-JCNCNN21HB",
-            databaseURL: "https://paskaness-default-rtdb.asia-southeast1.firebasedatabase.app"
+            measurementId: "G-JCNCNN21HB"
         };
-        firebase.initializeApp(firebaseConfig);
-        // Menyimpan database ke window agar siap dipakai oleh React di bawah
-        window.firebaseDb = firebase.database();
+
+        // --- ARSITEKTUR 3 DATABASE ---
+        // 1. DB Khusus Like & Komen (Database Utama saat ini)
+        const configDB_LikeKomen = { ...baseConfig, databaseURL: "https://paskaness-default-rtdb.asia-southeast1.firebasedatabase.app" };
+        
+        // 2. DB Khusus Akun 1 (Untuk Foto & Nama) -> GANTI LINK JIKA SUDAH ADA DB BARU
+        const configDB_Akun1 = { ...baseConfig, databaseURL: "https://paskanes-account-default-rtdb.asia-southeast1.firebasedatabase.app" }; 
+        
+        // 3. DB Khusus Akun 2 (Cadangan Bergilir) -> GANTI LINK JIKA SUDAH ADA DB BARU
+        const configDB_Akun2 = { ...baseConfig, databaseURL: "https://paskaness-account-2-default-rtdb.asia-southeast1.firebasedatabase.app" }; 
+
+        // Menyalakan 3 Mesin Firebase Sekaligus
+        const appLikeKomen = firebase.initializeApp(configDB_LikeKomen, "AppLikeKomen");
+        const appAkun1 = firebase.initializeApp(configDB_Akun1, "AppAkun1");
+        const appAkun2 = firebase.initializeApp(configDB_Akun2, "AppAkun2");
+
+        // Menyimpan ke window agar dipakai di React
+        window.dbLikeKomen = appLikeKomen.database();
+        window.fbAuth = appAkun1.auth(); // Auth menempel di mesin Akun 1
+        window.dbAkun1 = appAkun1.database();
+        window.dbAkun2 = appAkun2.database();
+
+        // BATAS MAKSIMAL AKUN UNTUK BERGILIR KE DB CADANGAN (Set = 2 akun untuk uji coba)
+        window.LIMIT_AKUN = 2; 
     </script>
-    <!-- ================================================================ -->
-    
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -332,7 +350,76 @@
 
         normalizeImageSources();
 
-        // ===== FUNGSI FIREBASE MENGGUNAKAN VERSI COMPAT =====
+        // ===== 1. SISTEM AUTENTIKASI & PROFIL (DENGAN SHARDING 2 DATABASE AKUN) =====
+        const useAuth = () => {
+            const [user, setUser] = useState(null);
+            const [userProfile, setUserProfile] = useState({ name: '', photo: '' });
+
+            useEffect(() => {
+                const unsubscribe = window.fbAuth.onAuthStateChanged(async (currentUser) => {
+                    if (currentUser) {
+                        setUser(currentUser);
+                        
+                        // Bersihkan pemantau lama
+                        if (window.activeProfileRef) window.activeProfileRef.off();
+
+                        // Cek profil di Database Akun 1
+                        const snap1 = await window.dbAkun1.ref('users/' + currentUser.uid).once('value');
+                        if (snap1.exists()) {
+                            window.activeProfileRef = window.dbAkun1.ref('users/' + currentUser.uid);
+                        } else {
+                            // Jika tidak ada, cek di Database Akun 2
+                            const snap2 = await window.dbAkun2.ref('users/' + currentUser.uid).once('value');
+                            if (snap2.exists()) {
+                                window.activeProfileRef = window.dbAkun2.ref('users/' + currentUser.uid);
+                            } else {
+                                // Default darurat
+                                window.activeProfileRef = window.dbAkun1.ref('users/' + currentUser.uid);
+                            }
+                        }
+
+                        // Pantau perubahan profil secara live
+                        window.activeProfileRef.on('value', (snap) => {
+                            if(snap.exists()) setUserProfile(snap.val());
+                        });
+
+                    } else {
+                        setUser(null);
+                        setUserProfile({ name: '', photo: '' });
+                        if (window.activeProfileRef) window.activeProfileRef.off();
+                    }
+                });
+                return () => unsubscribe();
+            }, []);
+
+            const login = async (email, password) => await window.fbAuth.signInWithEmailAndPassword(email, password);
+            
+            const register = async (email, password, name) => {
+                const res = await window.fbAuth.createUserWithEmailAndPassword(email, password);
+                
+                // LOGIKA SHARDING: Cek jumlah data di DB Akun 1
+                const snap = await window.dbAkun1.ref('users').once('value');
+                const count = snap.exists() ? Object.keys(snap.val()).length : 0;
+                
+                // Jika DB 1 penuh (mencapai batas), alihkan ke DB 2
+                const targetDB = count < window.LIMIT_AKUN ? window.dbAkun1 : window.dbAkun2;
+                await targetDB.ref('users/' + res.user.uid).set({ name: name, photo: '' });
+            };
+            
+            const logout = () => window.fbAuth.signOut();
+            
+            const updateProfile = async (name, photoBase64) => {
+                if(!user) return;
+                // Cari profilnya ada di DB mana
+                const snap1 = await window.dbAkun1.ref('users/' + user.uid).once('value');
+                const targetDB = snap1.exists() ? window.dbAkun1 : window.dbAkun2;
+                await targetDB.ref('users/' + user.uid).update({ name: name, photo: photoBase64 });
+            };
+
+            return { user, userProfile, login, register, logout, updateProfile };
+        };
+
+        // ===== 2. SISTEM LIKE & KOMENTAR (DI DATABASE UTAMA) =====
         const useLikes = () => {
             const [userLikes, setUserLikes] = useState(() => {
                 const saved = localStorage.getItem('paskanessUserLikes');
@@ -341,8 +428,8 @@
             const [totalLikes, setTotalLikes] = useState({});
 
             useEffect(() => {
-                if (window.firebaseDb) {
-                    const likesRef = window.firebaseDb.ref('likes');
+                if (window.dbLikeKomen) {
+                    const likesRef = window.dbLikeKomen.ref('likes');
                     likesRef.on('value', (snapshot) => {
                         if (snapshot.exists()) {
                             const data = snapshot.val();
@@ -377,8 +464,8 @@
                 setUserLikes(newUserLikes);
                 localStorage.setItem('paskanessUserLikes', JSON.stringify(Array.from(newUserLikes)));
 
-                if (window.firebaseDb) {
-                    const postRef = window.firebaseDb.ref('likes/post_' + activityId);
+                if (window.dbLikeKomen) {
+                    const postRef = window.dbLikeKomen.ref('likes/post_' + activityId);
                     try {
                         const snap = await postRef.once('value');
                         if (snap.exists()) {
@@ -400,14 +487,13 @@
             return { handleLike, hasUserLiked, getTotalLikes };
         };
 
-        const CommentsSection = ({ activityId }) => {
+        const CommentsSection = ({ activityId, auth }) => {
             const [comments, setComments] = useState([]);
-            const [name, setName] = useState('');
             const [text, setText] = useState('');
 
             useEffect(() => {
-                if (!activityId || !window.firebaseDb) return;
-                const commentsRef = window.firebaseDb.ref(`comments/post_${activityId}`);
+                if (!activityId || !window.dbLikeKomen) return;
+                const commentsRef = window.dbLikeKomen.ref(`comments/post_${activityId}`);
                 
                 commentsRef.on('value', (snapshot) => {
                     if (snapshot.exists()) {
@@ -424,12 +510,21 @@
 
             const handleSubmit = async (e) => {
                 e.preventDefault();
-                if (!name.trim() || !text.trim() || !window.firebaseDb) return;
+                
+                // Mencegah Komentar jika belum Login
+                if (!auth.user) {
+                    alert("Anda harus Login terlebih dahulu untuk mengirim komentar!");
+                    return window.dispatchEvent(new CustomEvent('openAuthModal'));
+                }
+                
+                if (!text.trim() || !window.dbLikeKomen) return;
                 
                 try {
-                    const commentsRef = window.firebaseDb.ref(`comments/post_${activityId}`);
+                    const commentsRef = window.dbLikeKomen.ref(`comments/post_${activityId}`);
                     await commentsRef.push({
-                        name: name.trim(),
+                        uid: auth.user.uid,
+                        name: auth.userProfile?.name || 'Anggota',
+                        photo: auth.userProfile?.photo || '',
                         text: text.trim(),
                         timestamp: Date.now()
                     });
@@ -444,24 +539,162 @@
                     <h3 className="text-lg font-bold text-on-surface mb-4 flex items-center gap-2">
                         <Icon name="message-square" className="w-5 h-5 text-primary" /> Komentar ({comments.length})
                     </h3>
-                    <form onSubmit={handleSubmit} className="mb-6 space-y-3">
-                        <input type="text" placeholder="Nama Anda" value={name} onChange={(e) => setName(e.target.value)} className="w-full bg-background/50 border border-primary/20 rounded-lg px-4 py-2 text-sm text-on-surface focus:outline-none focus:border-primary transition-colors" required />
-                        <textarea placeholder="Tuliskan kesan atau tanggapan Anda..." value={text} onChange={(e) => setText(e.target.value)} className="w-full bg-background/50 border border-primary/20 rounded-lg px-4 py-2 text-sm text-on-surface focus:outline-none focus:border-primary transition-colors resize-none h-20" required ></textarea>
-                        <button type="submit" className="px-5 py-2 bg-primary text-white text-sm font-bold rounded-lg hover:opacity-90 transition-all flex items-center gap-2"><Icon name="send" className="w-4 h-4" /> Kirim Komentar</button>
-                    </form>
+                    
+                    {auth.user ? (
+                        <form onSubmit={handleSubmit} className="mb-6 flex gap-3 items-start">
+                            <div className="w-10 h-10 shrink-0 rounded-full bg-background border border-primary/30 overflow-hidden flex items-center justify-center">
+                                {auth.userProfile?.photo ? <img src={auth.userProfile.photo} className="w-full h-full object-cover"/> : <Icon name="user" className="w-5 h-5 text-primary"/>}
+                            </div>
+                            <div className="flex-1 space-y-3">
+                                <textarea placeholder={`Tulis komentar sebagai ${auth.userProfile?.name || 'Anggota'}...`} value={text} onChange={(e) => setText(e.target.value)} className="w-full bg-background/50 border border-primary/20 rounded-lg px-4 py-3 text-sm text-on-surface focus:outline-none focus:border-primary transition-colors resize-none h-20" required ></textarea>
+                                <button type="submit" className="px-5 py-2 bg-primary text-white text-sm font-bold rounded-lg hover:opacity-90 transition-all flex items-center gap-2"><Icon name="send" className="w-4 h-4" /> Kirim</button>
+                            </div>
+                        </form>
+                    ) : (
+                        <div className="mb-6 p-4 bg-primary/10 rounded-xl border border-primary/20 text-center">
+                            <p className="text-sm text-primary mb-3">Login untuk ikut berdiskusi dan meninggalkan jejak Anda!</p>
+                            <button onClick={() => window.dispatchEvent(new CustomEvent('openAuthModal'))} className="px-5 py-2 bg-primary text-white text-sm font-bold rounded-lg shadow-lg hover:brightness-110 active:scale-95 transition-all">
+                                Login / Daftar Akun
+                            </button>
+                        </div>
+                    )}
+
                     <div className="space-y-4 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
                         {comments.length === 0 ? (
                             <p className="text-on-surface-variant text-sm text-center italic py-4">Belum ada komentar. Jadilah yang pertama!</p>
                         ) : (
                             comments.map(comment => (
-                                <div key={comment.id} className="bg-background/40 p-4 rounded-xl border border-white/5 shadow-sm">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <span className="font-bold text-primary text-sm">{comment.name}</span>
-                                        <span className="text-xs text-on-surface-variant">{new Date(comment.timestamp).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year:'numeric'})}</span>
+                                <div key={comment.id} className="bg-background/40 p-4 rounded-xl border border-white/5 shadow-sm flex gap-3">
+                                    <div className="w-10 h-10 shrink-0 rounded-full bg-background border border-white/10 overflow-hidden flex items-center justify-center">
+                                        {comment.photo ? <img src={comment.photo} className="w-full h-full object-cover"/> : <Icon name="user" className="w-5 h-5 text-on-surface-variant"/>}
                                     </div>
-                                    <p className="text-on-surface text-sm break-words leading-relaxed">{comment.text}</p>
+                                    <div>
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <span className="font-bold text-primary text-sm">{comment.name}</span>
+                                            <span className="text-xs text-on-surface-variant">&bull; {new Date(comment.timestamp).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year:'numeric'})}</span>
+                                        </div>
+                                        <p className="text-on-surface text-sm break-words leading-relaxed">{comment.text}</p>
+                                    </div>
                                 </div>
                             ))
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        // --- KOMPONEN MODAL LOGIN / PROFIL ---
+        const AuthProfileModal = ({ auth, onClose }) => {
+            const [mode, setMode] = useState(auth.user ? 'PROFILE' : 'LOGIN');
+            const [email, setEmail] = useState(''); 
+            const [password, setPassword] = useState('');
+            const [name, setName] = useState(auth.userProfile?.name || '');
+            const [error, setError] = useState('');
+            const [imgPreview, setImgPreview] = useState(auth.userProfile?.photo || '');
+
+            const handleFile = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    // TRIK KOMPRESI BASE64 (Mengecilkan file agar DB tidak penuh)
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 150; 
+                        const scaleSize = MAX_WIDTH / img.width;
+                        canvas.width = MAX_WIDTH; 
+                        canvas.height = img.height * scaleSize;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        setImgPreview(canvas.toDataURL('image/jpeg', 0.6)); 
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            };
+
+            const handleSubmit = async (e) => {
+                e.preventDefault(); setError('');
+                try {
+                    if (mode === 'LOGIN') {
+                        await auth.login(email, password);
+                        onClose();
+                    } else if (mode === 'REGISTER') {
+                        await auth.register(email, password, name);
+                        onClose();
+                    } else if (mode === 'PROFILE') {
+                        await auth.updateProfile(name, imgPreview);
+                        onClose();
+                    }
+                } catch (err) { 
+                    setError(err.message.includes('auth/invalid-credential') ? 'Email atau Password salah!' : err.message); 
+                }
+            };
+
+            return (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={onClose}></div>
+                    <div className="glass-panel w-full max-w-sm p-8 rounded-3xl relative z-10 fade-in border border-primary/20">
+                        <button onClick={onClose} className="absolute top-5 right-5 text-on-surface-variant hover:text-primary transition-colors"><Icon name="x" className="w-5 h-5"/></button>
+                        
+                        <h2 className="text-2xl font-extrabold text-center mb-6 text-on-surface">
+                            {mode === 'LOGIN' ? 'Masuk' : mode === 'REGISTER' ? 'Daftar Akun' : 'Ubah Profil'}
+                        </h2>
+
+                        {error && <div className="bg-red-500/20 text-red-400 p-3 rounded-xl text-xs mb-4 text-center border border-red-500/30">{error}</div>}
+
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            {(mode === 'REGISTER' || mode === 'PROFILE') && (
+                                <div className="flex flex-col items-center gap-3 mb-6">
+                                    <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-primary/50 relative bg-background/50 flex items-center justify-center shadow-lg">
+                                        {imgPreview ? <img src={imgPreview} className="w-full h-full object-cover" /> : <Icon name="user" className="w-10 h-10 text-on-surface-variant"/>}
+                                    </div>
+                                    <label className="text-xs bg-primary/10 text-primary px-4 py-1.5 rounded-full cursor-pointer hover:bg-primary/20 transition-colors font-bold border border-primary/30">
+                                        Pilih Foto (Opsional)
+                                        <input type="file" accept="image/*" className="hidden" onChange={handleFile} />
+                                    </label>
+                                </div>
+                            )}
+
+                            {(mode === 'REGISTER' || mode === 'PROFILE') && (
+                                <div>
+                                    <label className="text-xs font-bold text-on-surface-variant ml-1 mb-1 block">Nama Lengkap</label>
+                                    <input type="text" placeholder="Masukkan nama..." value={name} onChange={e=>setName(e.target.value)} required className="w-full bg-background/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-on-surface focus:border-primary outline-none transition-colors" />
+                                </div>
+                            )}
+
+                            {(mode === 'LOGIN' || mode === 'REGISTER') && (
+                                <>
+                                    <div>
+                                        <label className="text-xs font-bold text-on-surface-variant ml-1 mb-1 block">Email</label>
+                                        <input type="email" placeholder="email@contoh.com" value={email} onChange={e=>setEmail(e.target.value)} required className="w-full bg-background/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-on-surface focus:border-primary outline-none transition-colors" />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-bold text-on-surface-variant ml-1 mb-1 block">Password</label>
+                                        <input type="password" placeholder="Minimal 6 karakter" value={password} onChange={e=>setPassword(e.target.value)} required className="w-full bg-background/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-on-surface focus:border-primary outline-none transition-colors" />
+                                    </div>
+                                </>
+                            )}
+
+                            <button type="submit" className="w-full py-3.5 mt-2 bg-primary text-white font-bold rounded-xl hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-primary/20">
+                                {mode === 'LOGIN' ? 'Masuk Sekarang' : mode === 'REGISTER' ? 'Daftar Sekarang' : 'Simpan Profil'}
+                            </button>
+                        </form>
+
+                        {mode !== 'PROFILE' && (
+                            <p className="text-center text-xs text-on-surface-variant mt-6">
+                                {mode === 'LOGIN' ? "Anggota baru? " : "Sudah terdaftar? "}
+                                <span onClick={() => {setMode(mode === 'LOGIN' ? 'REGISTER' : 'LOGIN'); setError('');}} className="text-primary font-bold cursor-pointer hover:underline">
+                                    {mode === 'LOGIN' ? 'Buat akun di sini' : 'Masuk di sini'}
+                                </span>
+                            </p>
+                        )}
+
+                        {mode === 'PROFILE' && (
+                            <button onClick={() => {auth.logout(); onClose();}} className="w-full mt-4 py-2.5 border border-red-500/30 text-red-400 text-sm font-bold rounded-xl hover:bg-red-500/10 transition-colors">
+                                Keluar Akun (Logout)
+                            </button>
                         )}
                     </div>
                 </div>
@@ -510,23 +743,48 @@
             );
         };
 
-        const Navbar = ({ activeTab, setActiveTab, isLightMode, toggleTheme }) => {
+        const Navbar = ({ activeTab, setActiveTab, isLightMode, toggleTheme, auth }) => {
             const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
             return (
                 <nav className="fixed top-0 w-full z-50 bg-[var(--theme-nav)] backdrop-blur-lg border-b border-sky-400/10 transition-colors duration-300">
                     <div className="flex justify-between items-center px-8 py-4 max-w-7xl mx-auto">
-                        <div className="text-2xl font-semibold text-primary tracking-wider flex gap-2 items-center">{WEBSITE_CONFIG.brandName}</div>
-                        <div className="hidden md:flex items-center space-x-8 font-medium tracking-tight">
-                            {[{ id: 'home', label: 'Beranda', icon: 'home' }, { id: 'archive', label: 'Arsip Kegiatan', icon: 'history' }, { id: 'structure', label: 'Struktur Pengurus', icon: 'users' }].map((tab) => (
-                                <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`transition-colors duration-300 px-2 py-1 rounded relative ${ activeTab === tab.id ? "text-primary" : "text-on-surface-variant hover:text-primary hover:bg-sky-400/10" }`}> <i data-lucide={tab.icon} className="w-4 h-4 inline mr-1"></i> {tab.label} {activeTab === tab.id && ( <div className="absolute -bottom-4 left-0 right-0 h-0.5 bg-primary"></div> )} </button>
-                            ))}
-                            <button onClick={toggleTheme} className="ml-4 p-2 text-on-surface-variant hover:text-primary transition-colors rounded-full glass-panel flex items-center justify-center"> <Icon name={isLightMode ? "moon" : "sun"} className="w-4 h-4" /> </button>
+                        
+                        {/* BAGIAN KIRI: Hamburger & Tombol Profil Berdampingan */}
+                        <div className="flex items-center gap-3">
+                            <button className="md:hidden p-2 text-on-surface-variant hover:text-primary transition-colors" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}> 
+                                <Icon name={isMobileMenuOpen ? "x" : "menu"} className="w-6 h-6" /> 
+                            </button>
+                            
+                            <div onClick={() => window.dispatchEvent(new CustomEvent('openAuthModal'))} className="flex items-center gap-2 cursor-pointer p-1 pr-4 rounded-full bg-background/50 border border-white/5 hover:border-primary/40 transition-colors group">
+                                <div className="w-8 h-8 rounded-full bg-primary/20 overflow-hidden border border-primary/30 flex items-center justify-center">
+                                    {auth.userProfile?.photo ? <img src={auth.userProfile.photo} className="w-full h-full object-cover" /> : <Icon name="user" className="w-4 h-4 text-primary" />}
+                                </div>
+                                <span className="text-xs font-bold text-on-surface group-hover:text-primary whitespace-nowrap hidden sm:block">
+                                    {auth.user ? auth.userProfile?.name : 'Ubah Profil / Login'}
+                                </span>
+                            </div>
                         </div>
-                        <div className="md:hidden flex items-center gap-4">
-                            <button onClick={toggleTheme} className="p-2 text-on-surface-variant hover:text-primary transition-colors rounded-full glass-panel flex items-center justify-center"> <Icon name={isLightMode ? "moon" : "sun"} className="w-4 h-4" /> </button>
-                            <button className="text-on-surface-variant hover:text-primary transition-colors" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}> <Icon name={isMobileMenuOpen ? "x" : "menu"} className="w-6 h-6" /> </button>
+
+                        {/* BAGIAN TENGAH: Logo Desktop */}
+                        <div className="hidden md:flex text-2xl font-semibold text-primary tracking-wider gap-2 items-center absolute left-1/2 -translate-x-1/2">
+                            {WEBSITE_CONFIG.brandName}
+                        </div>
+
+                        {/* BAGIAN KANAN: Menu */}
+                        <div className="flex items-center gap-2 md:gap-4 font-medium tracking-tight">
+                            <div className="hidden md:flex items-center space-x-2">
+                                {[{ id: 'home', label: 'Beranda', icon: 'home' }, { id: 'archive', label: 'Arsip Kegiatan', icon: 'history' }, { id: 'structure', label: 'Struktur Pengurus', icon: 'users' }].map((tab) => (
+                                    <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`transition-colors duration-300 px-3 py-1.5 rounded-lg text-sm flex items-center gap-1.5 ${ activeTab === tab.id ? "bg-primary/10 text-primary" : "text-on-surface-variant hover:text-primary hover:bg-white/5" }`}> 
+                                        <Icon name={tab.icon} className="w-4 h-4"/> {tab.label} 
+                                    </button>
+                                ))}
+                            </div>
+                            <button onClick={toggleTheme} className="p-2 text-on-surface-variant hover:text-primary transition-colors rounded-full glass-panel flex items-center justify-center"> 
+                                <Icon name={isLightMode ? "moon" : "sun"} className="w-4 h-4" /> 
+                            </button>
                         </div>
                     </div>
+
                     {isMobileMenuOpen && (
                         <div className="md:hidden bg-[var(--theme-nav-mobile)] backdrop-blur-lg border-t border-sky-400/10 transition-colors duration-300">
                             <div className="px-8 py-4 space-y-4">
@@ -553,7 +811,7 @@
             </footer>
         );
 
-        const ActivityModal = ({ activity, onClose }) => {
+        const ActivityModal = ({ activity, onClose, auth }) => {
             if (!activity) return null;
             return (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8">
@@ -576,7 +834,7 @@
                                     <button onClick={() => { const shareUrl = `${window.location.origin}${window.location.pathname}#activity-${activity.id}`; const shareText = `Lihat dokumentasi kegiatan: ${activity.title}`; if (navigator.share) { navigator.share({ title: activity.title, text: shareText, url: shareUrl }); } else { navigator.clipboard.writeText(`${shareText} ${shareUrl}`); alert('Link berhasil disalin ke clipboard!'); } }} className="flex-1 py-4 rounded-xl glass-panel text-primary font-bold hover:bg-primary/10 transition-all shadow-lg shadow-primary/10 flex items-center justify-center gap-2" > <Icon name="share-2" className="w-5 h-5" /> Bagikan </button>
                                     {(!activity.documentation || activity.documentation.length === 0) && ( <button className="flex-1 py-4 rounded-xl bg-primary text-white font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20"> Lihat Dokumentasi </button> )}
                                 </div>
-                                <CommentsSection activityId={activity.id} />
+                                <CommentsSection activityId={activity.id} auth={auth} />
                             </div>
                         </div>
                     </div>
@@ -584,7 +842,7 @@
             );
         };
 
-        const HomePage = ({ onNavigate }) => {
+        const HomePage = ({ onNavigate, auth }) => {
             const [selectedActivity, setSelectedActivity] = useState(null);
             const { handleLike, hasUserLiked, getTotalLikes } = useLikes(); 
             return (
@@ -603,12 +861,12 @@
                             ))}
                         </div>
                     </section>
-                    <ActivityModal activity={selectedActivity} onClose={() => setSelectedActivity(null)} />
+                    <ActivityModal activity={selectedActivity} onClose={() => setSelectedActivity(null)} auth={auth} />
                 </div>
             );
         };
 
-        const ArchivePage = () => {
+        const ArchivePage = ({ auth }) => {
             const [selectedActivity, setSelectedActivity] = useState(null);
             const { handleLike, hasUserLiked, getTotalLikes } = useLikes();
             return (
@@ -636,7 +894,7 @@
                             ))}
                         </div>
                     </section>
-                    <ActivityModal activity={selectedActivity} onClose={() => setSelectedActivity(null)} />
+                    <ActivityModal activity={selectedActivity} onClose={() => setSelectedActivity(null)} auth={auth} />
                 </div>
             );
         };
@@ -687,6 +945,16 @@
         function App() {
             const [activeTab, setActiveTab] = useState('home');
             const [isLightMode, setIsLightMode] = useState(() => localStorage.getItem('paskanessTheme') === 'light');
+            const [showAuthModal, setShowAuthModal] = useState(false);
+            
+            // Mengambil fungsi auth (Login & Database Bergilir)
+            const auth = useAuth();
+
+            useEffect(() => {
+                const listener = () => setShowAuthModal(true);
+                window.addEventListener('openAuthModal', listener);
+                return () => window.removeEventListener('openAuthModal', listener);
+            }, []);
 
             useEffect(() => {
                 if (isLightMode) { document.documentElement.classList.add('light-mode'); localStorage.setItem('paskanessTheme', 'light'); } 
@@ -700,13 +968,20 @@
             return (
                 <div className="min-h-screen flex flex-col relative z-0">
                     <Background3DObjects />
-                    <Navbar activeTab={activeTab} setActiveTab={setActiveTab} isLightMode={isLightMode} toggleTheme={toggleTheme} />
+                    
+                    {/* Mengirimkan data profil pengguna ke Navbar agar muncul di pojok kiri atas */}
+                    <Navbar activeTab={activeTab} setActiveTab={setActiveTab} isLightMode={isLightMode} toggleTheme={toggleTheme} auth={auth} />
+                    
                     <main className="flex-grow">
-                        {activeTab === 'home' && <HomePage onNavigate={setActiveTab} />}
-                        {activeTab === 'archive' && <ArchivePage />}
+                        {/* Mengirimkan Auth ke halaman-halaman yang butuh fitur Komentar (Modal) */}
+                        {activeTab === 'home' && <HomePage onNavigate={setActiveTab} auth={auth} />}
+                        {activeTab === 'archive' && <ArchivePage auth={auth} />}
                         {activeTab === 'structure' && <StructurePage />}
                     </main>
                     <Footer />
+
+                    {/* Memanggil Popup Login/Profil jika tombol ditekan */}
+                    {showAuthModal && <AuthProfileModal auth={auth} onClose={() => setShowAuthModal(false)} />}
                 </div>
             );
         }
