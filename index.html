@@ -356,32 +356,27 @@
             const [userProfile, setUserProfile] = useState({ name: '', photo: '' });
 
             useEffect(() => {
-                const unsubscribe = window.fbAuth.onAuthStateChanged(async (currentUser) => {
+                const unsubscribe = window.fbAuth.onAuthStateChanged((currentUser) => {
                     if (currentUser) {
                         setUser(currentUser);
-                        
-                        // Bersihkan pemantau lama
                         if (window.activeProfileRef) window.activeProfileRef.off();
 
-                        // Cek profil di Database Akun 1
-                        const snap1 = await window.dbAkun1.ref('users/' + currentUser.uid).once('value');
-                        if (snap1.exists()) {
-                            window.activeProfileRef = window.dbAkun1.ref('users/' + currentUser.uid);
-                        } else {
-                            // Jika tidak ada, cek di Database Akun 2
-                            const snap2 = await window.dbAkun2.ref('users/' + currentUser.uid).once('value');
-                            if (snap2.exists()) {
-                                window.activeProfileRef = window.dbAkun2.ref('users/' + currentUser.uid);
+                        // JEDA WAKTU (Timeout): Ini akan memperbaiki masalah gagal tersimpan saat pendaftaran baru (Race Condition)
+                        setTimeout(async () => {
+                            let targetDB = window.dbAkun1;
+                            const snap1 = await window.dbAkun1.ref('users/' + currentUser.uid).once('value');
+                            if (snap1.exists()) {
+                                targetDB = window.dbAkun1;
                             } else {
-                                // Default darurat
-                                window.activeProfileRef = window.dbAkun1.ref('users/' + currentUser.uid);
+                                const snap2 = await window.dbAkun2.ref('users/' + currentUser.uid).once('value');
+                                if (snap2.exists()) targetDB = window.dbAkun2;
                             }
-                        }
 
-                        // Pantau perubahan profil secara live
-                        window.activeProfileRef.on('value', (snap) => {
-                            if(snap.exists()) setUserProfile(snap.val());
-                        });
+                            window.activeProfileRef = targetDB.ref('users/' + currentUser.uid);
+                            window.activeProfileRef.on('value', (snap) => {
+                                if(snap.exists()) setUserProfile(snap.val());
+                            });
+                        }, 800);
 
                     } else {
                         setUser(null);
@@ -394,23 +389,19 @@
 
             const login = async (email, password) => await window.fbAuth.signInWithEmailAndPassword(email, password);
             
-            // LOGIKA LOGIN GOOGLE DENGAN SHARDING
             const loginWithGoogle = async () => {
                 const provider = new firebase.auth.GoogleAuthProvider();
                 const res = await window.fbAuth.signInWithPopup(provider);
                 const user = res.user;
                 
-                // Cek apakah user sudah punya data profil di database kita
                 const snap1 = await window.dbAkun1.ref('users/' + user.uid).once('value');
                 const snap2 = await window.dbAkun2.ref('users/' + user.uid).once('value');
                 
-                // Jika belum ada di kedua DB (berarti pengguna baru pertama kali login Google)
                 if (!snap1.exists() && !snap2.exists()) {
                     const snapCount = await window.dbAkun1.ref('users').once('value');
                     const count = snapCount.exists() ? Object.keys(snapCount.val()).length : 0;
                     const targetDB = count < window.LIMIT_AKUN ? window.dbAkun1 : window.dbAkun2;
                     
-                    // Simpan nama dan foto asli dari akun Google mereka
                     await targetDB.ref('users/' + user.uid).set({ 
                         name: user.displayName || 'Anggota Google', 
                         photo: user.photoURL || '' 
@@ -422,11 +413,9 @@
             const register = async (email, password, name) => {
                 const res = await window.fbAuth.createUserWithEmailAndPassword(email, password);
                 
-                // LOGIKA SHARDING: Cek jumlah data di DB Akun 1
                 const snap = await window.dbAkun1.ref('users').once('value');
                 const count = snap.exists() ? Object.keys(snap.val()).length : 0;
                 
-                // Jika DB 1 penuh (mencapai batas), alihkan ke DB 2
                 const targetDB = count < window.LIMIT_AKUN ? window.dbAkun1 : window.dbAkun2;
                 await targetDB.ref('users/' + res.user.uid).set({ name: name, photo: '' });
             };
@@ -435,13 +424,18 @@
             
             const updateProfile = async (newName, photoBase64) => {
                 if(!user) return;
-                // Cari profilnya ada di DB mana
-                const snap1 = await window.dbAkun1.ref('users/' + user.uid).once('value');
-                const targetDB = snap1.exists() ? window.dbAkun1 : window.dbAkun2;
-                await targetDB.ref('users/' + user.uid).update({ name: newName, photo: photoBase64 });
                 
-                // Update UI Profil seketika tanpa menunggu sinkronisasi internet
-                setUserProfile(prev => ({ ...prev, name: newName, photo: photoBase64 }));
+                let targetDB = window.dbAkun1;
+                const snap1 = await window.dbAkun1.ref('users/' + user.uid).once('value');
+                if (!snap1.exists()) {
+                    const snap2 = await window.dbAkun2.ref('users/' + user.uid).once('value');
+                    if (snap2.exists()) targetDB = window.dbAkun2;
+                }
+                
+                // Mendorong data ke database
+                await targetDB.ref('users/' + user.uid).update({ name: newName, photo: photoBase64 });
+                // Sinkronisasi paksa ke UI tanpa menunggu internet
+                setUserProfile(prev => ({...prev, name: newName, photo: photoBase64}));
             };
 
             return { user, userProfile, login, register, logout, updateProfile, loginWithGoogle };
@@ -613,72 +607,66 @@
 
         // --- KOMPONEN MODAL LOGIN / PROFIL ---
         const AuthProfileModal = ({ auth, onClose }) => {
-            const [mode, setMode] = useState(auth.user ? 'PROFILE' : 'LOGIN');
+            const [mode, setMode] = useState('LOGIN'); 
             const [email, setEmail] = useState(''); 
             const [password, setPassword] = useState('');
             const [name, setName] = useState('');
             const [error, setError] = useState('');
             const [imgPreview, setImgPreview] = useState('');
+            const [loading, setLoading] = useState(false);
 
-            // Sinkronisasi otomatis saat modal terbuka (Menyelesaikan masalah nama kosong)
+            // PENYAKIT SETELAH DAFTAR TERATASI: Sensor otomatis jika user berhasil login
             useEffect(() => {
-                if (auth.userProfile) {
-                    setName(auth.userProfile.name || '');
-                    setImgPreview(auth.userProfile.photo || '');
+                if (auth.user) {
+                    setMode('PROFILE');
+                    setName(auth.userProfile?.name || '');
+                    setImgPreview(auth.userProfile?.photo || '');
+                } else {
+                    setMode('LOGIN');
                 }
-            }, [auth.userProfile, auth.user]);
+            }, [auth.user]); 
+
+            // Sinkronisasi nama saat proses pengambilan dari database (Loading awal)
+            useEffect(() => {
+                if (auth.userProfile?.name) setName(auth.userProfile.name);
+                if (auth.userProfile?.photo) setImgPreview(auth.userProfile.photo);
+            }, [auth.userProfile?.name, auth.userProfile?.photo]);
 
             const handleFile = (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
+                
+                // PENYAKIT WHITE SCREEN TERATASI: Bypass metode berat, limit gambar max 2MB
+                if (file.size > 2 * 1024 * 1024) {
+                    alert("Ukuran foto terlalu besar! Maksimal 2MB.");
+                    return;
+                }
+
                 const reader = new FileReader();
                 reader.onload = (event) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        try {
-                            const canvas = document.createElement('canvas');
-                            let width = img.width;
-                            let height = img.height;
-                            const MAX_SIZE = 150; 
-
-                            // Trik menjaga rasio gambar dan mencegah White Screen (Crash)
-                            if (width > height) {
-                                if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; }
-                            } else {
-                                if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; }
-                            }
-
-                            canvas.width = width; 
-                            canvas.height = height;
-                            const ctx = canvas.getContext('2d');
-                            ctx.drawImage(img, 0, 0, width, height);
-                            setImgPreview(canvas.toDataURL('image/jpeg', 0.6)); 
-                        } catch(err) {
-                            console.error("Gagal kompresi foto:", err);
-                            alert("Gagal memproses gambar. Coba gambar lain.");
-                        }
-                    };
-                    img.src = event.target.result;
+                    setImgPreview(event.target.result); // Simpan langsung dengan cepat dan aman
                 };
                 reader.readAsDataURL(file);
             };
 
             const handleSubmit = async (e) => {
-                e.preventDefault(); setError('');
+                e.preventDefault(); setError(''); setLoading(true);
                 try {
                     if (mode === 'LOGIN') {
                         await auth.login(email, password);
-                        setMode('PROFILE'); // Langsung buka menu Profil
+                        // Mode akan otomatis pindah ke profil berkat sensor useEffect
                     } else if (mode === 'REGISTER') {
                         await auth.register(email, password, name);
-                        setMode('PROFILE'); // Langsung buka menu Profil
+                        // Mode akan otomatis pindah ke profil berkat sensor useEffect
                     } else if (mode === 'PROFILE') {
                         await auth.updateProfile(name, imgPreview);
-                        alert("Profil berhasil diperbarui!");
-                        onClose();
+                        alert("Profil berhasil disimpan!");
+                        onClose(); // Tutup halaman profil karena sudah selesai
                     }
                 } catch (err) { 
                     setError(err.message.includes('auth/invalid-credential') ? 'Email atau Password salah!' : err.message); 
+                } finally {
+                    setLoading(false);
                 }
             };
 
@@ -727,8 +715,8 @@
                                 </>
                             )}
 
-                            <button type="submit" className="w-full py-3.5 mt-2 bg-primary text-white font-bold rounded-xl hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-primary/20">
-                                {mode === 'LOGIN' ? 'Masuk Sekarang' : mode === 'REGISTER' ? 'Daftar Sekarang' : 'Simpan Profil'}
+                            <button type="submit" disabled={loading} className="w-full py-3.5 mt-2 bg-primary text-white font-bold rounded-xl hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-primary/20">
+                                {loading ? 'Memproses...' : (mode === 'LOGIN' ? 'Masuk Sekarang' : mode === 'REGISTER' ? 'Daftar Sekarang' : 'Simpan Profil')}
                             </button>
                         </form>
 
@@ -740,7 +728,7 @@
                                     <div className="flex-grow border-t border-white/10"></div>
                                 </div>
                                 <button type="button" onClick={async () => {
-                                    try { setError(''); await auth.loginWithGoogle(); setMode('PROFILE'); } 
+                                    try { setError(''); await auth.loginWithGoogle(); } 
                                     catch (err) { setError(err.message); }
                                 }} className="w-full py-3 mt-2 bg-white text-gray-900 font-bold rounded-xl hover:bg-gray-200 active:scale-95 transition-all flex items-center justify-center gap-3 shadow-lg border border-transparent">
                                     <svg className="w-5 h-5" viewBox="0 0 24 24">
