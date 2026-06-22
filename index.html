@@ -21,23 +21,20 @@
     <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-auth-compat.js"></script>
     
     <script>
-        // --- KONFIGURASI KUNCI FIREBASE ANDA ---
-        const baseConfig = {
+        // --- 1. KONFIGURASI PROYEK UTAMA (PASKANESS) ---
+        const configUtama = {
             apiKey: "AIzaSyBxRCMWxb34jBQvHQwWId8YZ8ugBaH_WJY",
             authDomain: "paskaness.firebaseapp.com",
             projectId: "paskaness",
             storageBucket: "paskaness.firebasestorage.app",
             messagingSenderId: "219809083748",
             appId: "1:219809083748:web:c61287aa3ba9f3da638a71",
-            measurementId: "G-JCNCNN21HB"
+            measurementId: "G-JCNCNN21HB",
+            databaseURL: "https://paskaness-default-rtdb.asia-southeast1.firebasedatabase.app"
         };
 
-        // --- ARSITEKTUR 3 DATABASE ---
-        // 1. DB Khusus Like & Komen (Database Utama saat ini)
-        const configDB_LikeKomen = { ...baseConfig, databaseURL: "https://paskaness-default-rtdb.asia-southeast1.firebasedatabase.app" };
-        
-        // 2. DB Khusus Akun 1 (Untuk Foto & Nama) (Dari Foto paskanes-account)
-        const configDB_Akun1 = {
+        // --- 2. KONFIGURASI PROYEK AKUN 1 (Dari Foto paskanes-account) ---
+        const configAkun1 = {
             apiKey: "AIzaSyBCcaV6Qa9gJ3B6tYMg3T459XwWCGAoGfw",
             authDomain: "paskanes-account.firebaseapp.com",
             databaseURL: "https://paskanes-account-default-rtdb.asia-southeast1.firebasedatabase.app",
@@ -47,9 +44,9 @@
             appId: "1:883350978280:web:4c2e0c4c43a12de1b9535d",
             measurementId: "G-DP4QNGBJ50"
         }; 
-        
-        // 3. DB Khusus Akun 2 (Cadangan Bergilir) (Dari Foto paskaness-account-2)
-        const configDB_Akun2 = {
+
+        // --- 3. KONFIGURASI PROYEK AKUN 2 (Dari Foto paskaness-account-2) ---
+        const configAkun2 = {
             apiKey: "AIzaSyBrWK4sWyyAeWgJ1phVWavVuaeRYAqxcck",
             authDomain: "paskaness-account-2.firebaseapp.com",
             databaseURL: "https://paskaness-account-2-default-rtdb.asia-southeast1.firebasedatabase.app",
@@ -61,13 +58,13 @@
         }; 
 
         // Menyalakan 3 Mesin Firebase Sekaligus
-        const appLikeKomen = firebase.initializeApp(configDB_LikeKomen, "AppLikeKomen");
-        const appAkun1 = firebase.initializeApp(configDB_Akun1, "AppAkun1");
-        const appAkun2 = firebase.initializeApp(configDB_Akun2, "AppAkun2");
+        const appUtama = firebase.initializeApp(configUtama, "AppUtama");
+        const appAkun1 = firebase.initializeApp(configAkun1, "AppAkun1");
+        const appAkun2 = firebase.initializeApp(configAkun2, "AppAkun2");
 
         // Menyimpan ke window agar dipakai di React
-        window.dbLikeKomen = appLikeKomen.database();
-        window.fbAuth = appAkun1.auth(); // Auth menempel di mesin Akun 1
+        window.dbLikeKomen = appUtama.database();
+        window.fbAuth = appUtama.auth(); 
         window.dbAkun1 = appAkun1.database();
         window.dbAkun2 = appAkun2.database();
 
@@ -220,7 +217,7 @@
         const WEBSITE_CONTENT = {
             home: {
                 heroTitle: 'Jejak Karya dalam',
-                heroSubtitle: `Dokumentasi perjalanan PASKANESS dalam membangun masa depan yang berkelanjutan melalui kolaborasi komunitas and pemberdayaan pemuda.`,
+                heroSubtitle: `Dokumentasi perjalanan PASKANESS dalam membangun masa depan yang berkelanjutan melalui kolaborasi komunitas dan pemberdayaan pemuda.`,
                 visionTitle: 'Visi PASKANESS',
                 visionText: `Menjadi pusat keunggulan yang mampu menginspirasi perubahan positif dan melahirkan pemimpin masa depan yang berintegritas tinggi.`,
                 missionTitle: 'Misi Utama',
@@ -377,20 +374,26 @@
                 const unsubscribe = window.fbAuth.onAuthStateChanged(async (currentUser) => {
                     if (currentUser) {
                         setUser(currentUser);
+                        
+                        // Bersihkan pemantau lama
                         if (window.activeProfileRef) window.activeProfileRef.off();
 
+                        // Cek profil di Database Akun 1
                         const snap1 = await window.dbAkun1.ref('users/' + currentUser.uid).once('value');
                         if (snap1.exists()) {
                             window.activeProfileRef = window.dbAkun1.ref('users/' + currentUser.uid);
                         } else {
+                            // Jika tidak ada, cek di Database Akun 2
                             const snap2 = await window.dbAkun2.ref('users/' + currentUser.uid).once('value');
                             if (snap2.exists()) {
                                 window.activeProfileRef = window.dbAkun2.ref('users/' + currentUser.uid);
                             } else {
+                                // Default darurat
                                 window.activeProfileRef = window.dbAkun1.ref('users/' + currentUser.uid);
                             }
                         }
 
+                        // Pantau perubahan profil secara live
                         window.activeProfileRef.on('value', (snap) => {
                             if(snap.exists()) setUserProfile(snap.val());
                         });
@@ -406,19 +409,23 @@
 
             const login = async (email, password) => await window.fbAuth.signInWithEmailAndPassword(email, password);
             
+            // LOGIKA LOGIN GOOGLE DENGAN SHARDING
             const loginWithGoogle = async () => {
                 const provider = new firebase.auth.GoogleAuthProvider();
                 const res = await window.fbAuth.signInWithPopup(provider);
                 const user = res.user;
                 
+                // Cek apakah user sudah punya data profil di database kita
                 const snap1 = await window.dbAkun1.ref('users/' + user.uid).once('value');
                 const snap2 = await window.dbAkun2.ref('users/' + user.uid).once('value');
                 
+                // Jika belum ada di kedua DB (berarti pengguna baru pertama kali login Google)
                 if (!snap1.exists() && !snap2.exists()) {
                     const snapCount = await window.dbAkun1.ref('users').once('value');
                     const count = snapCount.exists() ? Object.keys(snapCount.val()).length : 0;
                     const targetDB = count < window.LIMIT_AKUN ? window.dbAkun1 : window.dbAkun2;
                     
+                    // Simpan nama dan foto asli dari akun Google mereka
                     await targetDB.ref('users/' + user.uid).set({ 
                         name: user.displayName || 'Anggota Google', 
                         photo: user.photoURL || '' 
@@ -429,9 +436,12 @@
 
             const register = async (email, password, name) => {
                 const res = await window.fbAuth.createUserWithEmailAndPassword(email, password);
+                
+                // LOGIKA SHARDING: Cek jumlah data di DB Akun 1
                 const snap = await window.dbAkun1.ref('users').once('value');
                 const count = snap.exists() ? Object.keys(snap.val()).length : 0;
                 
+                // Jika DB 1 penuh (mencapai batas), alihkan ke DB 2
                 const targetDB = count < window.LIMIT_AKUN ? window.dbAkun1 : window.dbAkun2;
                 await targetDB.ref('users/' + res.user.uid).set({ name: name, photo: '' });
             };
@@ -449,16 +459,19 @@
                         if (snap2.exists()) targetDB = window.dbAkun2;
                     }
                     
+                    // Mendorong data ke database
                     await targetDB.ref('users/' + user.uid).update({ name: newName, photo: photoBase64 });
+                    // Sinkronisasi paksa ke UI tanpa menunggu internet
                     setUserProfile(prev => ({...prev, name: newName, photo: photoBase64}));
                 } catch (error) {
-                    throw new Error("Gagal menyimpan ke Database.");
+                    throw new Error("Gagal menyimpan ke Database. Pastikan Rules Firebase true.");
                 }
             };
 
             return { user, userProfile, login, register, logout, updateProfile, loginWithGoogle };
         };
 
+        // ===== 2. SISTEM LIKE & KOMENTAR (DI DATABASE UTAMA) =====
         const useLikes = () => {
             const [userLikes, setUserLikes] = useState(() => {
                 const saved = localStorage.getItem('paskanessUserLikes');
@@ -549,10 +562,13 @@
 
             const handleSubmit = async (e) => {
                 e.preventDefault();
+                
+                // Mencegah Komentar jika belum Login
                 if (!auth.user) {
                     alert("Anda harus Login terlebih dahulu untuk mengirim komentar!");
                     return window.dispatchEvent(new CustomEvent('openAuthModal'));
                 }
+                
                 if (!text.trim() || !window.dbLikeKomen) return;
                 
                 try {
@@ -606,7 +622,11 @@
                             comments.map(comment => (
                                 <div key={comment.id} className="bg-background/40 p-4 rounded-xl border border-white/5 shadow-sm flex gap-3">
                                     <div className="w-10 h-10 shrink-0 rounded-full bg-background border border-white/10 overflow-hidden flex items-center justify-center">
-                                        {comment.photo ? <img src={comment.photo} className="w-full h-full object-cover"/> : <Icon name="user" className="w-5 h-5 text-on-surface-variant"/>}
+                                        {comment.photo ? (
+                                            <img src={comment.photo} className="w-full h-full object-cover" />
+                                        ) : (
+                                            <Icon name="user" className="w-5 h-5 text-on-surface-variant"/>
+                                        )}
                                     </div>
                                     <div>
                                         <div className="flex items-center gap-2 mb-1">
@@ -628,9 +648,9 @@
             const [mode, setMode] = useState(auth.user ? 'PROFILE' : 'LOGIN');
             const [email, setEmail] = useState(''); 
             const [password, setPassword] = useState('');
-            const [name, setName] = useState('');
+            const [name, setName] = useState(auth.userProfile?.name || '');
             const [error, setError] = useState('');
-            const [imgPreview, setImgPreview] = useState('');
+            const [imgPreview, setImgPreview] = useState(auth.userProfile?.photo || '');
             const [loading, setLoading] = useState(false);
 
             useEffect(() => {
@@ -650,22 +670,20 @@
                 }
             }, [auth.userProfile]);
 
-            // --- PERBAIKAN FUNGSIONAL TERPENTING (ANTI-BLANK-SCREEN) ---
             const handleFile = (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
                 
-                // Menggunakan Blob URL sementara untuk bypass string Base64 berat di memori RAM HP
                 const objectUrl = URL.createObjectURL(file);
                 const img = new Image();
                 img.onload = () => {
                     URL.revokeObjectURL(objectUrl);
                     const canvas = document.createElement('canvas');
-                    const MAX = 100; // Kompresi avatar ideal (<15KB), Firebase lancar & web anti-crash
+                    const MAX = 140; 
                     canvas.width = MAX; canvas.height = (img.height / img.width) * MAX;
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    setImgPreview(canvas.toDataURL('image/jpeg', 0.4)); 
+                    setImgPreview(canvas.toDataURL('image/jpeg', 0.5)); 
                 };
                 img.src = objectUrl;
             };
@@ -705,7 +723,11 @@
                             {(mode === 'REGISTER' || mode === 'PROFILE') && (
                                 <div className="flex flex-col items-center gap-3 mb-6">
                                     <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-primary/50 relative bg-background/50 flex items-center justify-center shadow-lg">
-                                        {imgPreview ? <img src={imgPreview} className="w-full h-full object-cover" /> : <Icon name="user" className="w-10 h-10 text-on-surface-variant"/>}
+                                        {imgPreview ? (
+                                            <img src={imgPreview} className="w-full h-full object-cover" />
+                                        ) : (
+                                            <Icon name="user" className="w-10 h-10 text-on-surface-variant"/>
+                                        )}
                                     </div>
                                     <label className="text-xs bg-primary/10 text-primary px-4 py-1.5 rounded-full cursor-pointer hover:bg-primary/20 transition-colors font-bold border border-primary/30">
                                         Pilih Foto (Opsional)
@@ -780,30 +802,27 @@
             );
         };
 
-        // --- Komponen Antarmuka Tampilan ---
-
+        // --- OBAT PENAWAR BLANK SCREEN (Kompabilitas Lucide + React) ---
         const Icon = ({ name, className }) => {
-            useEffect(() => { if (window.lucide) window.lucide.createIcons(); }, [name]);
-            return <i data-lucide={name} className={className}></i>;
+            const spanRef = useRef(null);
+            useEffect(() => {
+                if (spanRef.current && window.lucide) {
+                    spanRef.current.innerHTML = `<i data-lucide="${name}" class="${className || ''}"></i>`;
+                    window.lucide.createIcons({ root: spanRef.current });
+                }
+            }, [name, className]);
+            return <span ref={spanRef} style={{ display: 'contents' }}></span>;
         };
 
         const Background3DObjects = () => {
             const requestRef = useRef();
             const rotationRef = useRef(0);
-            const containerRef = useRef(null); // Pembatasan jangkauan agar render 60fps tidak crash setelah login
 
             useEffect(() => {
                 const handleScroll = () => { document.documentElement.style.setProperty('--scroll-y', window.scrollY); rotationRef.current += 1.2; };
                 window.addEventListener('scroll', handleScroll, { passive: true });
                 document.documentElement.style.setProperty('--scroll-y', window.scrollY);
-                
-                const animate = () => { 
-                    rotationRef.current += 0.25; 
-                    if (containerRef.current) {
-                        containerRef.current.style.setProperty('--global-rot', `${rotationRef.current}deg`);
-                    }
-                    requestRef.current = requestAnimationFrame(animate); 
-                };
+                const animate = () => { rotationRef.current += 0.25; document.documentElement.style.setProperty('--global-rot', `${rotationRef.current}deg`); requestRef.current = requestAnimationFrame(animate); };
                 requestRef.current = requestAnimationFrame(animate);
                 return () => { window.removeEventListener('scroll', handleScroll); cancelAnimationFrame(requestRef.current); };
             }, []);
@@ -823,10 +842,10 @@
             );
 
             return (
-                <div ref={containerRef}>
+                <>
                     <div className="fixed inset-0 overflow-hidden pointer-events-none z-[-2]"> {blobs.map(b => ( <div key={`blob-${b.id}`} className="absolute rounded-full opacity-20 dark:opacity-30 mix-blend-screen filter blur-[80px] animate-blob" style={{ left: b.left, top: b.top, width: b.width, height: b.height, background: b.color, animationDuration: b.animDuration, animationDelay: b.animDelay }} /> ))} </div>
                     <div className="absolute inset-0 pointer-events-none z-[-1] overflow-hidden" style={{ minHeight: '100vh' }}> {shapesData.map(shape => <Shape3D key={shape.id} {...shape} />)} </div>
-                </div>
+                </>
             );
         };
 
@@ -836,6 +855,7 @@
                 <nav className="fixed top-0 w-full z-50 bg-[var(--theme-nav)] backdrop-blur-lg border-b border-sky-400/10 transition-colors duration-300">
                     <div className="flex justify-between items-center px-8 py-4 max-w-7xl mx-auto">
                         
+                        {/* BAGIAN KIRI: Hamburger & Tombol Profil Berdampingan */}
                         <div className="flex items-center gap-3">
                             <button className="md:hidden p-2 text-on-surface-variant hover:text-primary transition-colors" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}> 
                                 <Icon name={isMobileMenuOpen ? "x" : "menu"} className="w-6 h-6" /> 
@@ -855,10 +875,12 @@
                             </div>
                         </div>
 
+                        {/* BAGIAN TENGAH: Logo Desktop */}
                         <div className="hidden md:flex text-2xl font-semibold text-primary tracking-wider gap-2 items-center absolute left-1/2 -translate-x-1/2">
                             {WEBSITE_CONFIG.brandName}
                         </div>
 
+                        {/* BAGIAN KANAN: Menu */}
                         <div className="flex items-center gap-2 md:gap-4 font-medium tracking-tight">
                             <div className="hidden md:flex items-center space-x-2">
                                 {[{ id: 'home', label: 'Beranda', icon: 'home' }, { id: 'archive', label: 'Arsip Kegiatan', icon: 'history' }, { id: 'structure', label: 'Struktur Pengurus', icon: 'users' }].map((tab) => (
