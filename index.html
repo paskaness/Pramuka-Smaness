@@ -356,27 +356,32 @@
             const [userProfile, setUserProfile] = useState({ name: '', photo: '' });
 
             useEffect(() => {
-                const unsubscribe = window.fbAuth.onAuthStateChanged((currentUser) => {
+                const unsubscribe = window.fbAuth.onAuthStateChanged(async (currentUser) => {
                     if (currentUser) {
                         setUser(currentUser);
+                        
+                        // Bersihkan pemantau lama
                         if (window.activeProfileRef) window.activeProfileRef.off();
 
-                        // JEDA WAKTU (Timeout): Ini akan memperbaiki masalah gagal tersimpan saat pendaftaran baru (Race Condition)
-                        setTimeout(async () => {
-                            let targetDB = window.dbAkun1;
-                            const snap1 = await window.dbAkun1.ref('users/' + currentUser.uid).once('value');
-                            if (snap1.exists()) {
-                                targetDB = window.dbAkun1;
+                        // Cek profil di Database Akun 1
+                        const snap1 = await window.dbAkun1.ref('users/' + currentUser.uid).once('value');
+                        if (snap1.exists()) {
+                            window.activeProfileRef = window.dbAkun1.ref('users/' + currentUser.uid);
+                        } else {
+                            // Jika tidak ada, cek di Database Akun 2
+                            const snap2 = await window.dbAkun2.ref('users/' + currentUser.uid).once('value');
+                            if (snap2.exists()) {
+                                window.activeProfileRef = window.dbAkun2.ref('users/' + currentUser.uid);
                             } else {
-                                const snap2 = await window.dbAkun2.ref('users/' + currentUser.uid).once('value');
-                                if (snap2.exists()) targetDB = window.dbAkun2;
+                                // Default darurat
+                                window.activeProfileRef = window.dbAkun1.ref('users/' + currentUser.uid);
                             }
+                        }
 
-                            window.activeProfileRef = targetDB.ref('users/' + currentUser.uid);
-                            window.activeProfileRef.on('value', (snap) => {
-                                if(snap.exists()) setUserProfile(snap.val());
-                            });
-                        }, 800);
+                        // Pantau perubahan profil secara live
+                        window.activeProfileRef.on('value', (snap) => {
+                            if(snap.exists()) setUserProfile(snap.val());
+                        });
 
                     } else {
                         setUser(null);
@@ -389,19 +394,23 @@
 
             const login = async (email, password) => await window.fbAuth.signInWithEmailAndPassword(email, password);
             
+            // LOGIKA LOGIN GOOGLE DENGAN SHARDING
             const loginWithGoogle = async () => {
                 const provider = new firebase.auth.GoogleAuthProvider();
                 const res = await window.fbAuth.signInWithPopup(provider);
                 const user = res.user;
                 
+                // Cek apakah user sudah punya data profil di database kita
                 const snap1 = await window.dbAkun1.ref('users/' + user.uid).once('value');
                 const snap2 = await window.dbAkun2.ref('users/' + user.uid).once('value');
                 
+                // Jika belum ada di kedua DB (berarti pengguna baru pertama kali login Google)
                 if (!snap1.exists() && !snap2.exists()) {
                     const snapCount = await window.dbAkun1.ref('users').once('value');
                     const count = snapCount.exists() ? Object.keys(snapCount.val()).length : 0;
                     const targetDB = count < window.LIMIT_AKUN ? window.dbAkun1 : window.dbAkun2;
                     
+                    // Simpan nama dan foto asli dari akun Google mereka
                     await targetDB.ref('users/' + user.uid).set({ 
                         name: user.displayName || 'Anggota Google', 
                         photo: user.photoURL || '' 
@@ -413,9 +422,11 @@
             const register = async (email, password, name) => {
                 const res = await window.fbAuth.createUserWithEmailAndPassword(email, password);
                 
+                // LOGIKA SHARDING: Cek jumlah data di DB Akun 1
                 const snap = await window.dbAkun1.ref('users').once('value');
                 const count = snap.exists() ? Object.keys(snap.val()).length : 0;
                 
+                // Jika DB 1 penuh (mencapai batas), alihkan ke DB 2
                 const targetDB = count < window.LIMIT_AKUN ? window.dbAkun1 : window.dbAkun2;
                 await targetDB.ref('users/' + res.user.uid).set({ name: name, photo: '' });
             };
@@ -426,16 +437,20 @@
                 if(!user) return;
                 
                 let targetDB = window.dbAkun1;
-                const snap1 = await window.dbAkun1.ref('users/' + user.uid).once('value');
-                if (!snap1.exists()) {
-                    const snap2 = await window.dbAkun2.ref('users/' + user.uid).once('value');
-                    if (snap2.exists()) targetDB = window.dbAkun2;
+                try {
+                    const snap1 = await window.dbAkun1.ref('users/' + user.uid).once('value');
+                    if (!snap1.exists()) {
+                        const snap2 = await window.dbAkun2.ref('users/' + user.uid).once('value');
+                        if (snap2.exists()) targetDB = window.dbAkun2;
+                    }
+                    
+                    // Mendorong data ke database
+                    await targetDB.ref('users/' + user.uid).update({ name: newName, photo: photoBase64 });
+                    // Sinkronisasi paksa ke UI tanpa menunggu internet
+                    setUserProfile(prev => ({...prev, name: newName, photo: photoBase64}));
+                } catch (error) {
+                    throw new Error("Gagal menyimpan ke Database. Pastikan Rules Firebase true.");
                 }
-                
-                // Mendorong data ke database
-                await targetDB.ref('users/' + user.uid).update({ name: newName, photo: photoBase64 });
-                // Sinkronisasi paksa ke UI tanpa menunggu internet
-                setUserProfile(prev => ({...prev, name: newName, photo: photoBase64}));
             };
 
             return { user, userProfile, login, register, logout, updateProfile, loginWithGoogle };
@@ -607,12 +622,12 @@
 
         // --- KOMPONEN MODAL LOGIN / PROFIL ---
         const AuthProfileModal = ({ auth, onClose }) => {
-            const [mode, setMode] = useState('LOGIN'); 
+            const [mode, setMode] = useState(auth.user ? 'PROFILE' : 'LOGIN');
             const [email, setEmail] = useState(''); 
             const [password, setPassword] = useState('');
-            const [name, setName] = useState('');
+            const [name, setName] = useState(auth.userProfile?.name || '');
             const [error, setError] = useState('');
-            const [imgPreview, setImgPreview] = useState('');
+            const [imgPreview, setImgPreview] = useState(auth.userProfile?.photo || '');
             const [loading, setLoading] = useState(false);
 
             // PENYAKIT SETELAH DAFTAR TERATASI: Sensor otomatis jika user berhasil login
@@ -624,29 +639,46 @@
                 } else {
                     setMode('LOGIN');
                 }
-            }, [auth.user]); 
-
-            // Sinkronisasi nama saat proses pengambilan dari database (Loading awal)
-            useEffect(() => {
-                if (auth.userProfile?.name) setName(auth.userProfile.name);
-                if (auth.userProfile?.photo) setImgPreview(auth.userProfile.photo);
-            }, [auth.userProfile?.name, auth.userProfile?.photo]);
+            }, [auth.user, auth.userProfile]); 
 
             const handleFile = (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
                 
-                // PENYAKIT WHITE SCREEN TERATASI: Bypass metode berat, limit gambar max 2MB
-                if (file.size > 2 * 1024 * 1024) {
-                    alert("Ukuran foto terlalu besar! Maksimal 2MB.");
-                    return;
-                }
+                // PENYAKIT WHITE SCREEN TERATASI: Gunakan ObjectURL dan batasi ukuran
+                try {
+                    const objectUrl = URL.createObjectURL(file);
+                    const img = new Image();
+                    img.onload = () => {
+                        URL.revokeObjectURL(objectUrl); // Bersihkan memori HP
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+                        const MAX_SIZE = 200; 
 
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    setImgPreview(event.target.result); // Simpan langsung dengan cepat dan aman
-                };
-                reader.readAsDataURL(file);
+                        // Jaga rasio gambar
+                        if (width > height) {
+                            if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; }
+                        } else {
+                            if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; }
+                        }
+
+                        canvas.width = width; 
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        // Kualitas 60% memastikan Base64 ringan sehingga Firebase tidak macet
+                        setImgPreview(canvas.toDataURL('image/jpeg', 0.6)); 
+                    };
+                    img.onerror = () => {
+                        alert("Gagal memuat foto.");
+                        URL.revokeObjectURL(objectUrl);
+                    };
+                    img.src = objectUrl;
+                } catch (err) {
+                    alert("Error saat memproses foto.");
+                }
             };
 
             const handleSubmit = async (e) => {
@@ -654,14 +686,14 @@
                 try {
                     if (mode === 'LOGIN') {
                         await auth.login(email, password);
-                        // Mode akan otomatis pindah ke profil berkat sensor useEffect
+                        // Mode otomatis berubah berkat useEffect
                     } else if (mode === 'REGISTER') {
                         await auth.register(email, password, name);
-                        // Mode akan otomatis pindah ke profil berkat sensor useEffect
+                        // Mode otomatis berubah berkat useEffect
                     } else if (mode === 'PROFILE') {
                         await auth.updateProfile(name, imgPreview);
-                        alert("Profil berhasil disimpan!");
-                        onClose(); // Tutup halaman profil karena sudah selesai
+                        alert("Profil berhasil diperbarui!");
+                        onClose(); // Tutup setelah berhasil simpan
                     }
                 } catch (err) { 
                     setError(err.message.includes('auth/invalid-credential') ? 'Email atau Password salah!' : err.message); 
