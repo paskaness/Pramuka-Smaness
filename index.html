@@ -36,10 +36,10 @@
         // 1. DB Khusus Like & Komen (Database Utama saat ini)
         const configDB_LikeKomen = { ...baseConfig, databaseURL: "https://paskaness-default-rtdb.asia-southeast1.firebasedatabase.app" };
         
-        // 2. DB Khusus Akun 1 (Untuk Foto & Nama)
+        // 2. DB Khusus Akun 1 (Untuk Foto & Nama) -> GANTI LINK JIKA SUDAH ADA DB BARU
         const configDB_Akun1 = { ...baseConfig, databaseURL: "https://paskanes-account-default-rtdb.asia-southeast1.firebasedatabase.app" }; 
         
-        // 3. DB Khusus Akun 2 (Cadangan Bergilir)
+        // 3. DB Khusus Akun 2 (Cadangan Bergilir) -> GANTI LINK JIKA SUDAH ADA DB BARU
         const configDB_Akun2 = { ...baseConfig, databaseURL: "https://paskaness-account-2-default-rtdb.asia-southeast1.firebasedatabase.app" }; 
 
         // Menyalakan 3 Mesin Firebase Sekaligus
@@ -52,9 +52,6 @@
         window.fbAuth = appAkun1.auth(); // Auth menempel di mesin Akun 1
         window.dbAkun1 = appAkun1.database();
         window.dbAkun2 = appAkun2.database();
-
-        // BATAS MAKSIMAL AKUN UNTUK BERGILIR KE DB CADANGAN (Set = 2 akun untuk uji coba)
-        window.LIMIT_AKUN = 2; 
     </script>
     <script>
         tailwind.config = {
@@ -355,28 +352,30 @@
             const [user, setUser] = useState(null);
             const [userProfile, setUserProfile] = useState({ name: '', photo: '' });
 
+            // LOGIKA SHARDING BARU: Sangat cepat dan tidak mengecek seluruh isi database
+            // Menentukan DB Akun berdasarkan UID (Ganjil/Genap dari karakter terakhir)
+            const getTargetDB = (uid) => {
+                const charCode = uid.charCodeAt(uid.length - 1);
+                return charCode % 2 === 0 ? window.dbAkun1 : window.dbAkun2;
+            };
+
             useEffect(() => {
                 const unsubscribe = window.fbAuth.onAuthStateChanged(async (currentUser) => {
                     if (currentUser) {
                         setUser(currentUser);
                         if (window.activeProfileRef) window.activeProfileRef.off();
 
-                        const snap1 = await window.dbAkun1.ref('users/' + currentUser.uid).once('value');
-                        if (snap1.exists()) {
-                            window.activeProfileRef = window.dbAkun1.ref('users/' + currentUser.uid);
-                        } else {
-                            const snap2 = await window.dbAkun2.ref('users/' + currentUser.uid).once('value');
-                            if (snap2.exists()) {
-                                window.activeProfileRef = window.dbAkun2.ref('users/' + currentUser.uid);
-                            } else {
-                                window.activeProfileRef = window.dbAkun1.ref('users/' + currentUser.uid);
-                            }
-                        }
+                        const targetDB = getTargetDB(currentUser.uid);
+                        window.activeProfileRef = targetDB.ref('users/' + currentUser.uid);
 
                         window.activeProfileRef.on('value', (snap) => {
-                            if(snap.exists()) setUserProfile(snap.val());
+                            if(snap.exists()) {
+                                setUserProfile(snap.val());
+                            } else {
+                                // Default jika profil belum terbuat sempurna
+                                setUserProfile({ name: currentUser.displayName || 'Anggota', photo: currentUser.photoURL || '' });
+                            }
                         });
-
                     } else {
                         setUser(null);
                         setUserProfile({ name: '', photo: '' });
@@ -391,19 +390,15 @@
             const loginWithGoogle = async () => {
                 const provider = new firebase.auth.GoogleAuthProvider();
                 const res = await window.fbAuth.signInWithPopup(provider);
-                const user = res.user;
+                const currentUser = res.user;
                 
-                const snap1 = await window.dbAkun1.ref('users/' + user.uid).once('value');
-                const snap2 = await window.dbAkun2.ref('users/' + user.uid).once('value');
+                const targetDB = getTargetDB(currentUser.uid);
+                const snap = await targetDB.ref('users/' + currentUser.uid).once('value');
                 
-                if (!snap1.exists() && !snap2.exists()) {
-                    const snapCount = await window.dbAkun1.ref('users').once('value');
-                    const count = snapCount.exists() ? Object.keys(snapCount.val()).length : 0;
-                    const targetDB = count < window.LIMIT_AKUN ? window.dbAkun1 : window.dbAkun2;
-                    
-                    await targetDB.ref('users/' + user.uid).set({ 
-                        name: user.displayName || 'Anggota Google', 
-                        photo: user.photoURL || '' 
+                if (!snap.exists()) {
+                    await targetDB.ref('users/' + currentUser.uid).set({ 
+                        name: currentUser.displayName || 'Anggota Google', 
+                        photo: currentUser.photoURL || '' 
                     });
                 }
                 return res;
@@ -411,23 +406,19 @@
 
             const register = async (email, password, name) => {
                 const res = await window.fbAuth.createUserWithEmailAndPassword(email, password);
-                const snap = await window.dbAkun1.ref('users').once('value');
-                const count = snap.exists() ? Object.keys(snap.val()).length : 0;
-                
-                const targetDB = count < window.LIMIT_AKUN ? window.dbAkun1 : window.dbAkun2;
-                await targetDB.ref('users/' + res.user.uid).set({ name: name, photo: '' });
+                const currentUser = res.user;
+                const targetDB = getTargetDB(currentUser.uid);
+                await targetDB.ref('users/' + currentUser.uid).set({ name: name, photo: '' });
             };
             
             const logout = () => window.fbAuth.signOut();
             
             const updateProfile = async (newName, photoBase64) => {
-                if(!user) return;
+                if(!user) throw new Error("Anda belum login.");
+                const targetDB = getTargetDB(user.uid);
                 
-                const snap1 = await window.dbAkun1.ref('users/' + user.uid).once('value');
-                const targetDB = snap1.exists() ? window.dbAkun1 : window.dbAkun2;
-                
-                // .set jauh lebih stabil untuk pembaruan profil penuh
-                await targetDB.ref('users/' + user.uid).set({ name: newName, photo: photoBase64 });
+                // .update() langsung ke targetDB tanpa query .once() yang bikin macet
+                await targetDB.ref('users/' + user.uid).update({ name: newName, photo: photoBase64 });
                 setUserProfile({ name: newName, photo: photoBase64 });
             };
 
@@ -525,10 +516,13 @@
 
             const handleSubmit = async (e) => {
                 e.preventDefault();
+                
+                // Mencegah Komentar jika belum Login
                 if (!auth.user) {
                     alert("Anda harus Login terlebih dahulu untuk mengirim komentar!");
                     return window.dispatchEvent(new CustomEvent('openAuthModal'));
                 }
+                
                 if (!text.trim() || !window.dbLikeKomen) return;
                 
                 try {
@@ -605,7 +599,6 @@
             const [imgPreview, setImgPreview] = useState('');
             const [loading, setLoading] = useState(false);
 
-            // Perbaikan sinkronisasi mode login/register -> menu profile otomatis
             useEffect(() => {
                 if (auth.user) {
                     setMode('PROFILE');
@@ -614,32 +607,46 @@
                 } else {
                     setMode('LOGIN');
                 }
-            }, [auth.user]);
-
-            useEffect(() => {
-                if (auth.userProfile && mode === 'PROFILE') {
-                    setName(auth.userProfile.name || '');
-                    setImgPreview(auth.userProfile.photo || '');
-                }
-            }, [auth.userProfile]);
+            }, [auth.user, auth.userProfile]); 
 
             const handleFile = (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
+
+                if (file.size > 5 * 1024 * 1024) {
+                    setError("Ukuran foto terlalu besar (Maksimal 5MB).");
+                    return;
+                }
                 
-                // Menghilangkan White Screen: Pakai ObjectURL (jauh lebih hemat RAM)
-                const objectUrl = URL.createObjectURL(file);
-                const img = new Image();
-                img.onload = () => {
-                    URL.revokeObjectURL(objectUrl);
-                    const canvas = document.createElement('canvas');
-                    const MAX = 140; 
-                    canvas.width = MAX; canvas.height = (img.height / img.width) * MAX;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    setImgPreview(canvas.toDataURL('image/jpeg', 0.5)); 
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        try {
+                            const canvas = document.createElement('canvas');
+                            let width = img.width;
+                            let height = img.height;
+                            const MAX_SIZE = 250; 
+
+                            if (width > height) {
+                                if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; }
+                            } else {
+                                if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; }
+                            }
+
+                            canvas.width = width; 
+                            canvas.height = height;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0, width, height);
+                            
+                            setImgPreview(canvas.toDataURL('image/jpeg', 0.6)); 
+                        } catch (err) {
+                            setError("Gagal memproses foto. Silakan coba foto lain.");
+                        }
+                    };
+                    img.src = event.target.result;
                 };
-                img.src = objectUrl;
+                reader.readAsDataURL(file);
             };
 
             const handleSubmit = async (e) => {
@@ -647,15 +654,17 @@
                 try {
                     if (mode === 'LOGIN') {
                         await auth.login(email, password);
+                        setMode('PROFILE');
                     } else if (mode === 'REGISTER') {
                         await auth.register(email, password, name);
+                        setMode('PROFILE');
                     } else if (mode === 'PROFILE') {
                         await auth.updateProfile(name, imgPreview);
-                        alert("Profil berhasil diperbarui!");
+                        alert("Profil berhasil diperbarui dan tersimpan di Database Akun!");
                         onClose();
                     }
                 } catch (err) { 
-                    setError(err.message); 
+                    setError(err.message.includes('auth/invalid-credential') ? 'Email atau Password salah!' : err.message); 
                 } finally {
                     setLoading(false);
                 }
@@ -719,8 +728,8 @@
                                     <div className="flex-grow border-t border-white/10"></div>
                                 </div>
                                 <button type="button" onClick={async () => {
-                                    try { setError(''); await auth.loginWithGoogle(); } 
-                                    catch (err) { setError(err.message); }
+                                    try { setError(''); setLoading(true); await auth.loginWithGoogle(); setMode('PROFILE'); } 
+                                    catch (err) { setError(err.message); } finally { setLoading(false); }
                                 }} className="w-full py-3 mt-2 bg-white text-gray-900 font-bold rounded-xl hover:bg-gray-200 active:scale-95 transition-all flex items-center justify-center gap-3 shadow-lg border border-transparent">
                                     <svg className="w-5 h-5" viewBox="0 0 24 24">
                                         <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -750,6 +759,13 @@
                     </div>
                 </div>
             );
+        };
+
+        // --- Komponen Antarmuka Tampilan ---
+
+        const Icon = ({ name, className }) => {
+            useEffect(() => { if (window.lucide) window.lucide.createIcons(); }, [name]);
+            return <i data-lucide={name} className={className}></i>;
         };
 
         const Background3DObjects = () => {
@@ -792,10 +808,13 @@
             return (
                 <nav className="fixed top-0 w-full z-50 bg-[var(--theme-nav)] backdrop-blur-lg border-b border-sky-400/10 transition-colors duration-300">
                     <div className="flex justify-between items-center px-8 py-4 max-w-7xl mx-auto">
+                        
+                        {/* BAGIAN KIRI: Hamburger & Tombol Profil Berdampingan */}
                         <div className="flex items-center gap-3">
                             <button className="md:hidden p-2 text-on-surface-variant hover:text-primary transition-colors" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}> 
                                 <Icon name={isMobileMenuOpen ? "x" : "menu"} className="w-6 h-6" /> 
                             </button>
+                            
                             <div onClick={() => window.dispatchEvent(new CustomEvent('openAuthModal'))} className="flex items-center gap-2 cursor-pointer p-1 pr-4 rounded-full bg-background/50 border border-white/5 hover:border-primary/40 transition-colors group">
                                 <div className="w-8 h-8 rounded-full bg-primary/20 overflow-hidden border border-primary/30 flex items-center justify-center">
                                     {auth.userProfile?.photo ? <img src={auth.userProfile.photo} className="w-full h-full object-cover" /> : <Icon name="user" className="w-4 h-4 text-primary" />}
@@ -806,10 +825,12 @@
                             </div>
                         </div>
 
+                        {/* BAGIAN TENGAH: Logo Desktop */}
                         <div className="hidden md:flex text-2xl font-semibold text-primary tracking-wider gap-2 items-center absolute left-1/2 -translate-x-1/2">
                             {WEBSITE_CONFIG.brandName}
                         </div>
 
+                        {/* BAGIAN KANAN: Menu */}
                         <div className="flex items-center gap-2 md:gap-4 font-medium tracking-tight">
                             <div className="hidden md:flex items-center space-x-2">
                                 {[{ id: 'home', label: 'Beranda', icon: 'home' }, { id: 'archive', label: 'Arsip Kegiatan', icon: 'history' }, { id: 'structure', label: 'Struktur Pengurus', icon: 'users' }].map((tab) => (
@@ -986,6 +1007,7 @@
             const [isLightMode, setIsLightMode] = useState(() => localStorage.getItem('paskanessTheme') === 'light');
             const [showAuthModal, setShowAuthModal] = useState(false);
             
+            // Mengambil fungsi auth (Login & Database Bergilir)
             const auth = useAuth();
 
             useEffect(() => {
@@ -1007,15 +1029,18 @@
                 <div className="min-h-screen flex flex-col relative z-0">
                     <Background3DObjects />
                     
+                    {/* Mengirimkan data profil pengguna ke Navbar agar muncul di pojok kiri atas */}
                     <Navbar activeTab={activeTab} setActiveTab={setActiveTab} isLightMode={isLightMode} toggleTheme={toggleTheme} auth={auth} />
                     
                     <main className="flex-grow">
+                        {/* Mengirimkan Auth ke halaman-halaman yang butuh fitur Komentar (Modal) */}
                         {activeTab === 'home' && <HomePage onNavigate={setActiveTab} auth={auth} />}
                         {activeTab === 'archive' && <ArchivePage auth={auth} />}
                         {activeTab === 'structure' && <StructurePage />}
                     </main>
                     <Footer />
 
+                    {/* Memanggil Popup Login/Profil jika tombol ditekan */}
                     {showAuthModal && <AuthProfileModal auth={auth} onClose={() => setShowAuthModal(false)} />}
                 </div>
             );
