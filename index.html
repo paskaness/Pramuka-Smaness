@@ -198,6 +198,20 @@
         };
         // =================================================
 
+        // --- OBAT PENAWAR BLANK SCREEN (Kompabilitas Lucide + React) ---
+        // Elemen ini mencegah React Crash saat Anda Login/Ganti Halaman
+        const Icon = ({ name, className }) => {
+            const spanRef = useRef(null);
+            useEffect(() => {
+                if (spanRef.current && window.lucide) {
+                    spanRef.current.innerHTML = `<i data-lucide="${name}" class="${className || ''}"></i>`;
+                    window.lucide.createIcons({ root: spanRef.current });
+                }
+            }, [name, className]);
+            return <span ref={spanRef} style={{ display: 'contents' }}></span>;
+        };
+        // ===============================================================
+
         const DRIVE_IMAGE_URL_BASE = 'https://drive.google.com/uc?id=';
         const getDriveUrlFromLink = (url) => {
             if (!url || typeof url !== 'string') return '';
@@ -817,11 +831,15 @@
             );
         };
 
-        // --- Komponen Antarmuka Tampilan ---
-
         const Icon = ({ name, className }) => {
-            useEffect(() => { if (window.lucide) window.lucide.createIcons(); }, [name]);
-            return <i data-lucide={name} className={className}></i>;
+            const spanRef = useRef(null);
+            useEffect(() => {
+                if (spanRef.current && window.lucide) {
+                    spanRef.current.innerHTML = `<i data-lucide="${name}" class="${className || ''}"></i>`;
+                    window.lucide.createIcons({ root: spanRef.current });
+                }
+            }, [name, className]);
+            return <span ref={spanRef} style={{ display: 'contents' }}></span>;
         };
 
         const Background3DObjects = () => {
