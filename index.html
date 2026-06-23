@@ -350,11 +350,11 @@
         ];
 
         const ACTIVITIES = [
-            { id: 1, title: 'Penerimaan Tamu Penegak', date: '30-31 Agustus 2025', description: 'Menjelajahi masa depan teknologi dengan para ahli industri dalam sesi diskusi panel yang mendalam.', image: 'thumbnail/ptp.jpg', imageUrl: '', location: 'SMAN 1 Sumberrejo', status: 'Terlaksana', category: 'sosial', likes: 0, documentation: [{ title: 'Foto Dokumentasi', link: 'https://drive.google.com/drive/folders/1e25b7WyNHz4b65EkHeRyHuAWCYS-htMm' }]},
-            { id: 4, title: 'Giat Pionering', date: '24 Oktober 2025', description: 'Sesi kolaboratif untuk mengasah keterampilan desain dan pemikiran kreatif bagi seluruh anggota.', image: 'thumbnail/pionering.jpg', imageUrl: '', location: 'SMAN 1 Sumberrejo', status: 'Terlaksana', category: 'Edukasi', likes: 0, documentation: [{ title: 'Foto Dokumentasi', link: 'https://drive.google.com/drive/folders/1mTdvi-SOMLEzwTCM48cEvhX0YNCkqQnE' }]},
-            { id: 5, title: 'Buka bersama 1447 H', date: '3 Maret 2026', description: 'Perayaan pencapaian kita sepanjang tahun dalam suasana formal yang hangat dan penuh kebersamaan.', image: 'thumbnail/bukber.jpg', imageUrl: '', location: 'Aula, SMAN 1 Sumberrejo', status: 'Terlaksana', category: 'Sosial', likes: 0, documentation: [{ title: 'Foto Dokumentasi', link: 'https://drive.google.com/drive/folders/1VGtK4hMpA7rvcBVDpn7nbDRdQM2t3J6T' }]},
-            { id: 6, title: 'LONG MARCH Pelantikan Bantara Laksana', date: '1-2 Mei 2026', description: 'Perayaan pencapaian kita sepanjang tahun dalam suasana formal yang hangat dan penuh kebersamaan.', image: '', imageUrl: '', location: 'Aula, SMAN 1 Sumberrejo', status: 'Terlaksana', category: 'Sosial', likes: 0, documentation: [{ title: 'Foto Dokumentasi', link: '' }]},
             { id: 7, title: 'MUSTEGAK 2026-2027', date: '12 Juni 2026', description: 'Perayaan pencapaian kita sepanjang tahun dalam suasana formal yang hangat dan penuh kebersamaan.', image: '', imageUrl: '', location: 'Aula, SMAN 1 Sumberrejo', status: 'Terlaksana', category: 'Sosial', likes: 0, documentation: [{ title: 'Foto Dokumentasi', link: '' }]},
+            { id: 6, title: 'LONG MARCH Pelantikan Bantara Laksana', date: '1-2 Mei 2026', description: 'Perayaan pencapaian kita sepanjang tahun dalam suasana formal yang hangat dan penuh kebersamaan.', image: '', imageUrl: '', location: 'Aula, SMAN 1 Sumberrejo', status: 'Terlaksana', category: 'Sosial', likes: 0, documentation: [{ title: 'Foto Dokumentasi', link: '' }]},
+            { id: 5, title: 'Buka bersama 1447 H', date: '3 Maret 2026', description: 'Perayaan pencapaian kita sepanjang tahun dalam suasana formal yang hangat dan penuh kebersamaan.', image: 'thumbnail/bukber.jpg', imageUrl: '', location: 'Aula, SMAN 1 Sumberrejo', status: 'Terlaksana', category: 'Sosial', likes: 0, documentation: [{ title: 'Foto Dokumentasi', link: 'https://drive.google.com/drive/folders/1VGtK4hMpA7rvcBVDpn7nbDRdQM2t3J6T' }]},
+            { id: 4, title: 'Giat Pionering', date: '24 Oktober 2025', description: 'Sesi kolaboratif untuk mengasah keterampilan desain dan pemikiran kreatif bagi seluruh anggota.', image: 'thumbnail/pionering.jpg', imageUrl: '', location: 'SMAN 1 Sumberrejo', status: 'Terlaksana', category: 'Edukasi', likes: 0, documentation: [{ title: 'Foto Dokumentasi', link: 'https://drive.google.com/drive/folders/1mTdvi-SOMLEzwTCM48cEvhX0YNCkqQnE' }]},
+            { id: 1, title: 'Penerimaan Tamu Penegak', date: '30-31 Agustus 2025', description: 'Menjelajahi masa depan teknologi dengan para ahli industri dalam sesi diskusi panel yang mendalam.', image: 'thumbnail/ptp.jpg', imageUrl: '', location: 'SMAN 1 Sumberrejo', status: 'Terlaksana', category: 'sosial', likes: 0, documentation: [{ title: 'Foto Dokumentasi', link: 'https://drive.google.com/drive/folders/1e25b7WyNHz4b65EkHeRyHuAWCYS-htMm' }]},
         ];
 
         const PAST_COLLECTIONS = [
@@ -562,6 +562,8 @@
         const CommentsSection = ({ activityId, auth }) => {
             const [comments, setComments] = useState([]);
             const [text, setText] = useState('');
+            const [userProfilesCache, setUserProfilesCache] = useState({});
+            const fetchingUids = useRef(new Set());
 
             useEffect(() => {
                 if (!activityId || !window.dbLikeKomen) return;
@@ -573,6 +575,30 @@
                         const commentsArray = Object.keys(data).map(key => ({ id: key, ...data[key] }));
                         commentsArray.sort((a, b) => b.timestamp - a.timestamp);
                         setComments(commentsArray);
+
+                        // Muat profil untuk setiap uid komentar yang belum ada di cache
+                        const uniqueUids = [...new Set(commentsArray.map(c => c.uid))].filter(Boolean);
+                        uniqueUids.forEach(async (uid) => {
+                            if (!fetchingUids.current.has(uid)) {
+                                fetchingUids.current.add(uid);
+                                
+                                let profileData = null;
+                                const snap1 = await window.dbAkun1.ref('users/' + uid).once('value');
+                                if (snap1.exists()) {
+                                    profileData = snap1.val();
+                                } else {
+                                    const snap2 = await window.dbAkun2.ref('users/' + uid).once('value');
+                                    if (snap2.exists()) {
+                                        profileData = snap2.val();
+                                    }
+                                }
+                                
+                                if (profileData) {
+                                    setUserProfilesCache(prev => ({ ...prev, [uid]: profileData }));
+                                }
+                            }
+                        });
+
                     } else {
                         setComments([]);
                     }
@@ -593,10 +619,9 @@
                 
                 try {
                     const commentsRef = window.dbLikeKomen.ref(`comments/post_${activityId}`);
+                    // Hanya simpan UID dan Text agar hemat penyimpanan (Tidak duplikat)
                     await commentsRef.push({
                         uid: auth.user.uid,
-                        name: auth.userProfile?.name || 'Anggota',
-                        photo: auth.userProfile?.photo || '',
                         text: text.trim(),
                         timestamp: Date.now()
                     });
@@ -639,24 +664,38 @@
                         {comments.length === 0 ? (
                             <p className="text-on-surface-variant text-sm text-center italic py-4">Belum ada komentar. Jadilah yang pertama!</p>
                         ) : (
-                            comments.map(comment => (
+                            comments.map(comment => {
+                                // Menentukan nama dan foto secara dinamis (mengikuti profil terbaru)
+                                let authorName = 'Anggota';
+                                let authorPhoto = '';
+                                
+                                if (auth.user && comment.uid === auth.user.uid) {
+                                    authorName = auth.userProfile?.name || 'Anggota';
+                                    authorPhoto = auth.userProfile?.photo || '';
+                                } else {
+                                    authorName = userProfilesCache[comment.uid]?.name || comment.name || 'Anggota';
+                                    authorPhoto = userProfilesCache[comment.uid]?.photo || comment.photo || '';
+                                }
+                                
+                                return (
                                 <div key={comment.id} className="bg-background/40 p-4 rounded-xl border border-white/5 shadow-sm flex gap-3">
                                     <div className="w-10 h-10 shrink-0 rounded-full bg-background border border-white/10 overflow-hidden flex items-center justify-center">
-                                        {comment.photo ? (
-                                            <img src={comment.photo} className="w-full h-full object-cover" />
+                                        {authorPhoto ? (
+                                            <img src={authorPhoto} className="w-full h-full object-cover" />
                                         ) : (
                                             <Icon name="user" className="w-5 h-5 text-on-surface-variant"/>
                                         )}
                                     </div>
                                     <div>
                                         <div className="flex items-center gap-2 mb-1">
-                                            <span className="font-bold text-primary text-sm">{comment.name}</span>
+                                            <span className="font-bold text-primary text-sm">{authorName}</span>
                                             <span className="text-xs text-on-surface-variant">&bull; {new Date(comment.timestamp).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year:'numeric'})}</span>
                                         </div>
                                         <p className="text-on-surface text-sm break-words leading-relaxed">{comment.text}</p>
                                     </div>
                                 </div>
-                            ))
+                                );
+                            })
                         )}
                     </div>
                 </div>
@@ -830,7 +869,7 @@
             return <span ref={spanRef} style={{ display: 'contents' }}></span>;
         };
 
-        const Background3DObjects = React.memo(() => {
+        const Background3DObjects = React.memo(({ animationLevel = 50 }) => {
             const requestRef = useRef();
             const rotationRef = useRef(0);
 
@@ -859,6 +898,7 @@
                 const fpsInterval = 1000 / 30; // Batasi animasi 30 FPS agar ringan
                 
                 const animate = (time) => { 
+                    if (animationLevel === 0) return;
                     requestRef.current = requestAnimationFrame(animate); 
                     
                     const elapsed = time - lastTime;
@@ -868,13 +908,25 @@
                         document.documentElement.style.setProperty('--global-rot', `${rotationRef.current}deg`); 
                     }
                 };
-                requestRef.current = requestAnimationFrame(animate);
+                if (animationLevel > 0) requestRef.current = requestAnimationFrame(animate);
                 
-                return () => { window.removeEventListener('scroll', handleScroll); cancelAnimationFrame(requestRef.current); };
-            }, []);
+                return () => { window.removeEventListener('scroll', handleScroll); if (requestRef.current) cancelAnimationFrame(requestRef.current); };
+            }, [animationLevel]);
 
-            const blobs = useMemo(() => Array.from({ length: window.innerWidth < 768 ? 3 : 6 }).map((_, i) => ({ id: i, left: `${Math.random() * 100}vw`, top: `${Math.random() * 100}%`, width: `${Math.random() * 300 + 100}px`, height: `${Math.random() * 300 + 100}px`, animDuration: `${Math.random() * 15 + 10}s`, animDelay: `${Math.random() * -20}s`, color: ['#7dd3fc', '#c8a0f0', '#38bdf8', '#a855f7', '#60a5fa'][Math.floor(Math.random() * 5)] })), []);
-            const shapesData = useMemo(() => { const shapes = []; const count = window.innerWidth < 768 ? 10 : 25; for (let i = 0; i < count; i++) { shapes.push({ id: i, type: Math.random() > 0.5 ? 'cube' : 'diamond', size: Math.random() * 40 + 30, left: `${Math.random() * 90 + 5}%`, top: `${(i * (100/count)) + (Math.random() * 10)}%`, color: ['var(--theme-primary)', 'var(--theme-tertiary)', '#38bdf8', '#a855f7', '#60a5fa'][Math.floor(Math.random() * 5)], rotX: (Math.random() - 0.5) * 3, rotY: (Math.random() - 0.5) * 3, parallaxSpeed: Math.random() * 0.5 + 0.2 }); } return shapes; }, []);
+            const blobs = useMemo(() => {
+                if (animationLevel === 0) return [];
+                const baseCount = window.innerWidth < 768 ? 6 : 14;
+                const count = Math.ceil(baseCount * (animationLevel / 100));
+                return Array.from({ length: count }).map((_, i) => ({ id: i, left: `${Math.random() * 100}vw`, top: `${Math.random() * 100}%`, width: `${Math.random() * 300 + 100}px`, height: `${Math.random() * 300 + 100}px`, animDuration: `${Math.random() * 15 + 10}s`, animDelay: `${Math.random() * -20}s`, color: ['#7dd3fc', '#c8a0f0', '#38bdf8', '#a855f7', '#60a5fa'][Math.floor(Math.random() * 5)] }));
+            }, [animationLevel]);
+            
+            const shapesData = useMemo(() => { 
+                if (animationLevel === 0) return [];
+                const shapes = []; 
+                const baseCount = window.innerWidth < 768 ? 20 : 60; 
+                const count = Math.ceil(baseCount * (animationLevel / 100));
+                for (let i = 0; i < count; i++) { shapes.push({ id: i, type: Math.random() > 0.5 ? 'cube' : 'diamond', size: Math.random() * 40 + 30, left: `${Math.random() * 90 + 5}%`, top: `${(i * (100/count)) + (Math.random() * 10)}%`, color: ['var(--theme-primary)', 'var(--theme-tertiary)', '#38bdf8', '#a855f7', '#60a5fa'][Math.floor(Math.random() * 5)], rotX: (Math.random() - 0.5) * 3, rotY: (Math.random() - 0.5) * 3, parallaxSpeed: Math.random() * 0.5 + 0.2 }); } return shapes; 
+            }, [animationLevel]);
 
             const Shape3D = React.memo(({ type, size, left, top, color, rotX, rotY, parallaxSpeed }) => (
                 <div className="absolute pointer-events-none z-[-1]" style={{ left, top }}>
@@ -887,6 +939,8 @@
                 </div>
             ));
 
+            if (animationLevel === 0) return null;
+
             return (
                 <>
                     <div className="fixed inset-0 overflow-hidden pointer-events-none z-[-2]"> {blobs.map(b => ( <div key={`blob-${b.id}`} className="absolute rounded-full opacity-20 dark:opacity-30 mix-blend-screen filter blur-[80px] animate-blob" style={{ left: b.left, top: b.top, width: b.width, height: b.height, background: b.color, animationDuration: b.animDuration, animationDelay: b.animDelay }} /> ))} </div>
@@ -895,53 +949,205 @@
             );
         });
 
+        const RealTimeClock = () => {
+            const [time, setTime] = useState(new Date());
+            
+            useEffect(() => {
+                const timer = setInterval(() => setTime(new Date()), 1000);
+                return () => clearInterval(timer);
+            }, []);
+
+            const fullString = time.toLocaleString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }).replace(/\./g, ':');
+            const shortString = time.toLocaleString('id-ID', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }).replace(/\./g, ':');
+
+            return (
+                <div className="flex items-center gap-1.5 md:gap-2 text-[10px] md:text-xs font-bold text-on-surface-variant bg-black/10 dark:bg-white/5 px-2.5 py-1.5 rounded-full border border-white/5 whitespace-nowrap ml-1 md:ml-2 shadow-inner">
+                    <Icon name="clock" className="w-3 h-3 md:w-3.5 md:h-3.5 text-primary" />
+                    <span className="hidden xl:inline">{fullString}</span>
+                    <span className="xl:hidden">{shortString}</span>
+                </div>
+            );
+        };
+
         const Navbar = ({ activeTab, setActiveTab, isLightMode, toggleTheme, auth }) => {
             const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+            const [isSearchOpen, setIsSearchOpen] = useState(false);
+            const [searchQuery, setSearchQuery] = useState('');
+            const searchInputRef = useRef(null);
+
+            // Fokus pada input ketika kolom pencarian dibuka
+            useEffect(() => {
+                if (isSearchOpen && searchInputRef.current) {
+                    searchInputRef.current.focus();
+                }
+            }, [isSearchOpen]);
+
+            // Logika Pencarian Global (Context-Aware)
+            const searchResults = useMemo(() => {
+                if (!searchQuery.trim()) return [];
+                const query = searchQuery.toLowerCase();
+                
+                if (activeTab === 'structure') {
+                    // Jika di halaman Struktur Pengurus, cari berdasarkan nama, jabatan, dan periode
+                    return MEMBERS.filter(member => 
+                        member.name.toLowerCase().includes(query) || 
+                        member.role.toLowerCase().includes(query) ||
+                        member.period.toLowerCase().includes(query)
+                    ).slice(0, 6); // Ambil maksimal 6 hasil pencarian
+                }
+                
+                // Jika di halaman lain, gabungkan kegiatan terkini dan koleksi masa lalu
+                const allActivities = [...ACTIVITIES, ...PAST_COLLECTIONS].filter((item, index, self) =>
+                    index === self.findIndex((t) => t.id === item.id)
+                );
+                
+                return allActivities.filter(item => 
+                    item.title.toLowerCase().includes(query) || 
+                    item.description.toLowerCase().includes(query) ||
+                    (item.category && item.category.toLowerCase().includes(query)) ||
+                    (item.location && item.location.toLowerCase().includes(query)) ||
+                    (item.status && item.status.toLowerCase().includes(query))
+                ).slice(0, 6); // Ambil maksimal 6 hasil pencarian
+            }, [searchQuery, activeTab]);
+
+            const closeSearch = () => {
+                setIsSearchOpen(false);
+                setSearchQuery('');
+            };
+
             return (
                 <nav className="fixed top-0 w-full z-50 bg-[var(--theme-nav)] backdrop-blur-lg border-b border-sky-400/10 transition-colors duration-300">
-                    <div className="flex justify-between items-center px-8 py-4 max-w-7xl mx-auto">
+                    <div className="flex justify-between items-center px-4 md:px-8 py-4 max-w-7xl mx-auto">
                         
                         {/* BAGIAN KIRI: Hamburger & Tombol Profil Berdampingan */}
-                        <div className="flex items-center gap-3">
-                            <button className="md:hidden p-2 text-on-surface-variant hover:text-primary transition-colors" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}> 
+                        <div className="flex items-center gap-2 md:gap-3">
+                            <button className="md:hidden p-2 text-on-surface-variant hover:text-primary transition-colors" onClick={() => { setIsMobileMenuOpen(!isMobileMenuOpen); if(!isMobileMenuOpen) setIsSearchOpen(false); }}> 
                                 <Icon name={isMobileMenuOpen ? "x" : "menu"} className="w-6 h-6" /> 
                             </button>
                             
                             <div onClick={() => {
-                                if (auth.user) {
-                                    setActiveTab('account');
-                                    setIsMobileMenuOpen(false);
-                                } else {
-                                    window.dispatchEvent(new CustomEvent('openAuthModal'));
-                                }
-                            }} className="flex items-center gap-2 cursor-pointer p-1 pr-4 rounded-full bg-background/50 border border-white/5 hover:border-primary/40 transition-colors group">
-                                <div className="w-8 h-8 rounded-full bg-primary/20 overflow-hidden border border-primary/30 flex items-center justify-center">
+                                setIsSearchOpen(false);
+                                setIsMobileMenuOpen(false);
+                                setActiveTab('account');
+                            }} className="flex items-center gap-2 cursor-pointer p-1 pr-3 md:pr-4 rounded-full bg-background/50 border border-white/5 hover:border-primary/40 transition-colors group shadow-sm">
+                                <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-primary/20 overflow-hidden border border-primary/30 flex items-center justify-center">
                                     {auth.userProfile?.photo ? (
                                         <img src={auth.userProfile.photo} className="w-full h-full object-cover" />
                                     ) : (
-                                        <Icon name="user" className="w-4 h-4 text-primary" />
+                                        <Icon name="user" className="w-3 h-3 md:w-4 md:h-4 text-primary" />
                                     )}
                                 </div>
-                                <span className="text-xs font-bold text-on-surface group-hover:text-primary whitespace-nowrap hidden sm:block">
+                                <span className="text-[10px] md:text-xs font-bold text-on-surface group-hover:text-primary whitespace-nowrap hidden sm:block">
                                     {auth.user ? auth.userProfile?.name : 'Masuk / Daftar'}
                                 </span>
                             </div>
+
+                            <RealTimeClock />
                         </div>
 
                         {/* BAGIAN TENGAH: Logo Desktop */}
-                        <div className="hidden md:flex text-2xl font-semibold text-primary tracking-wider gap-2 items-center absolute left-1/2 -translate-x-1/2">
+                        <div className="hidden md:flex text-2xl font-semibold text-primary tracking-wider gap-2 items-center absolute left-1/2 -translate-x-1/2 pointer-events-none">
                             {WEBSITE_CONFIG.brandName}
                         </div>
 
-                        {/* BAGIAN KANAN: Menu */}
-                        <div className="flex items-center gap-2 md:gap-4 font-medium tracking-tight">
+                        {/* BAGIAN KANAN: Menu & Pencarian */}
+                        <div className="flex items-center gap-2 md:gap-4 font-medium tracking-tight relative">
                             <div className="hidden md:flex items-center space-x-2">
                                 {[{ id: 'home', label: 'Beranda', icon: 'home' }, { id: 'archive', label: 'Arsip Kegiatan', icon: 'history' }, { id: 'structure', label: 'Struktur Pengurus', icon: 'users' }].map((tab) => (
-                                    <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`transition-colors duration-300 px-3 py-1.5 rounded-lg text-sm flex items-center gap-1.5 ${ activeTab === tab.id ? "bg-primary/10 text-primary" : "text-on-surface-variant hover:text-primary hover:bg-white/5" }`}> 
+                                    <button key={tab.id} onClick={() => { setActiveTab(tab.id); setIsSearchOpen(false); }} className={`transition-colors duration-300 px-3 py-1.5 rounded-lg text-sm flex items-center gap-1.5 ${ activeTab === tab.id ? "bg-primary/10 text-primary" : "text-on-surface-variant hover:text-primary hover:bg-white/5" }`}> 
                                         <Icon name={tab.icon} className="w-4 h-4"/> {tab.label} 
                                     </button>
                                 ))}
                             </div>
+                            
+                            {/* Tombol Pencarian & Dropdown */}
+                            <div className="relative flex items-center">
+                                <button onClick={() => { setIsSearchOpen(!isSearchOpen); if(!isSearchOpen) { setIsMobileMenuOpen(false); setSearchQuery(''); } }} className="p-2 text-on-surface-variant hover:text-primary transition-colors rounded-full glass-panel flex items-center justify-center relative z-10"> 
+                                    <Icon name={isSearchOpen ? "x" : "search"} className="w-4 h-4" /> 
+                                </button>
+                                
+                                {/* Overlay/Dropdown Pencarian */}
+                                {isSearchOpen && (
+                                    <div className="absolute right-0 top-12 md:top-14 w-[85vw] md:w-96 max-w-sm glass-panel-elevated bg-background/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-primary/20 overflow-hidden z-[100] animate-pop-10s origin-top-right flex flex-col">
+                                        
+                                        {/* Input Pencarian */}
+                                        <div className="p-4 border-b border-white/10 flex items-center gap-3 bg-surface/50">
+                                            <Icon name="search" className="w-5 h-5 text-primary shrink-0" />
+                                            <input 
+                                                ref={searchInputRef}
+                                                type="text" 
+                                                placeholder={activeTab === 'structure' ? "Cari nama atau jabatan pengurus..." : "Cari info kegiatan..."}
+                                                value={searchQuery}
+                                                onChange={(e) => setSearchQuery(e.target.value)}
+                                                className="w-full bg-transparent border-none outline-none text-on-surface placeholder:text-on-surface-variant/50 text-sm md:text-base font-medium focus:ring-0"
+                                            />
+                                            {searchQuery && (
+                                                <button onClick={() => setSearchQuery('')} className="text-on-surface-variant hover:text-red-400 p-1 shrink-0">
+                                                    <Icon name="x-circle" className="w-4 h-4" />
+                                                </button>
+                                            )}
+                                        </div>
+                                        
+                                        {/* Hasil Pencarian */}
+                                        <div className="max-h-[60vh] md:max-h-[400px] overflow-y-auto">
+                                            {!searchQuery.trim() ? (
+                                                <div className="p-8 text-center text-on-surface-variant text-sm flex flex-col items-center gap-3">
+                                                    <Icon name={activeTab === 'structure' ? "users" : "search"} className="w-10 h-10 opacity-20" />
+                                                    <p>{activeTab === 'structure' ? "Ketikkan nama, jabatan, atau periode pengurus untuk mencari." : "Ketikkan sesuatu untuk mencari kegiatan, lokasi, atau kategori terkait."}</p>
+                                                </div>
+                                            ) : searchResults.length > 0 ? (
+                                                <div className="flex flex-col py-2">
+                                                    <div className="px-4 py-2 text-xs font-bold tracking-wider text-primary uppercase">
+                                                        Hasil Pencarian ({searchResults.length})
+                                                    </div>
+                                                    {searchResults.map(result => (
+                                                        <div 
+                                                            key={result.id} 
+                                                            onClick={() => { 
+                                                                if (activeTab === 'structure') {
+                                                                    closeSearch(); 
+                                                                    setIsMobileMenuOpen(false);
+                                                                } else {
+                                                                    setActiveTab('activity', result); 
+                                                                    closeSearch(); 
+                                                                    setIsMobileMenuOpen(false); 
+                                                                }
+                                                            }}
+                                                            className="px-4 py-3 hover:bg-primary/10 cursor-pointer transition-colors flex gap-4 items-start group"
+                                                        >
+                                                            <div className="w-12 h-12 md:w-14 md:h-14 rounded-lg overflow-hidden shrink-0 border border-white/10 bg-black/20">
+                                                                <img src={getImageUrl(result)} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" referrerPolicy="no-referrer" />
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="flex items-center gap-2 mb-0.5">
+                                                                    <h4 className="text-sm md:text-base font-bold text-on-surface truncate group-hover:text-primary transition-colors">
+                                                                        {activeTab === 'structure' ? result.name : result.title}
+                                                                    </h4>
+                                                                </div>
+                                                                <p className="text-xs text-on-surface-variant line-clamp-2 leading-relaxed">
+                                                                    {activeTab === 'structure' ? `${result.role} (Periode ${result.period})` : result.description}
+                                                                </p>
+                                                                {result.category && activeTab !== 'structure' && (
+                                                                    <span className="inline-block mt-1.5 text-[9px] font-bold uppercase tracking-widest text-primary/80 bg-primary/10 px-2 py-0.5 rounded-md">
+                                                                        {result.category}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <div className="p-8 text-center text-on-surface-variant text-sm flex flex-col items-center gap-3">
+                                                    <Icon name="alert-circle" className="w-10 h-10 text-red-400/50" />
+                                                    <p>Tidak menemukan hasil pencarian untuk <strong>"{searchQuery}"</strong></p>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                    </div>
+                                )}
+                            </div>
+
                             <button onClick={toggleTheme} className="p-2 text-on-surface-variant hover:text-primary transition-colors rounded-full glass-panel flex items-center justify-center"> 
                                 <Icon name={isLightMode ? "moon" : "sun"} className="w-4 h-4" /> 
                             </button>
@@ -1083,6 +1289,69 @@
             );
         };
 
+        const StandaloneCarousel = ({ items, onNavigate, handleLike, hasUserLiked, getTotalLikes, autoPlayDelay = 5000 }) => {
+            const [currentIndex, setCurrentIndex] = useState(0);
+            const [isHovered, setIsHovered] = useState(false);
+            const touchStartX = useRef(0);
+
+            useEffect(() => {
+                if (isHovered || items.length <= 1) return;
+                const timer = setInterval(() => {
+                    setCurrentIndex((prev) => (prev + 1) % items.length);
+                }, autoPlayDelay);
+                return () => clearInterval(timer);
+            }, [isHovered, items.length, autoPlayDelay]);
+
+            const handleTouchStart = (e) => { touchStartX.current = e.changedTouches[0].screenX; };
+            const handleTouchEnd = (e) => {
+                if (items.length <= 1) return;
+                const touchEndX = e.changedTouches[0].screenX;
+                if (touchEndX < touchStartX.current - 40) setCurrentIndex(prev => (prev + 1) % items.length);
+                if (touchEndX > touchStartX.current + 40) setCurrentIndex(prev => (prev - 1 + items.length) % items.length);
+            };
+
+            const CarouselCard = ({ activity }) => (
+                <div onClick={() => onNavigate('activity', activity)} className="glass-panel rounded-3xl overflow-hidden group cursor-pointer hover:shadow-[0_15px_40px_rgba(125,211,252,0.15)] hover:translate-y-[-5px] transition-all duration-500 w-full h-full flex flex-col md:flex-row relative z-10 bg-surface/50 border border-white/5">
+                    
+                    {/* Bagian Gambar (Kiri di PC, Atas di HP) */}
+                    <div className="h-56 md:h-auto md:w-2/5 overflow-hidden relative shrink-0"> 
+                        <img src={getImageUrl(activity)} alt={activity.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" referrerPolicy="no-referrer" /> 
+                        <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-background/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div> 
+                        <div className="absolute top-4 left-4 glass-panel-elevated px-4 py-1.5 rounded-xl text-xs font-bold text-primary shadow-lg backdrop-blur-md border border-primary/20">{activity.date}</div> 
+                    </div>
+                    
+                    {/* Bagian Teks (Kanan di PC, Bawah di HP) */}
+                    <div className="p-6 md:p-8 flex flex-col flex-grow md:w-3/5"> 
+                        <div className="flex items-start justify-between mb-3 gap-2"> 
+                            <h3 className="text-xl md:text-2xl font-bold text-on-surface group-hover:text-primary transition-colors line-clamp-2">{activity.title}</h3> 
+                            {activity.category && ( <span className="shrink-0 rounded-full bg-primary/10 px-3 py-1.5 text-[10px] md:text-xs uppercase tracking-wider text-primary font-bold border border-primary/20"> {activity.category} </span> )} 
+                        </div> 
+                        <p className="text-on-surface-variant text-sm md:text-base mb-6 line-clamp-3 leading-relaxed flex-grow">{activity.description}</p> 
+                        <div className="flex items-center justify-between pt-4 border-t border-white/5 mt-auto"> 
+                            <div className="flex items-center gap-2 text-on-surface-variant text-sm truncate pr-2"><Icon name="map-pin" className="w-4 h-4 text-primary shrink-0" /><span className="truncate">{activity.location}</span></div> 
+                            <button type="button" onClick={(e) => handleLike(activity.id, e)} className={`shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold transition-all ${ hasUserLiked(activity.id) ? 'bg-red-500/20 text-red-400' : 'bg-black/20 dark:bg-white/5 text-on-surface hover:bg-red-500/10 hover:text-red-400' }`} > <Icon name="heart" className={`w-4 h-4 ${hasUserLiked(activity.id) ? 'fill-current' : ''}`} /> <span>{getTotalLikes(activity.id) || activity.likes || 0}</span> </button> 
+                        </div> 
+                    </div>
+
+                </div>
+            );
+
+            return (
+                <div className="w-full relative z-10 overflow-hidden pb-4 pt-2" onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+                    <div className="flex transition-transform duration-700 ease-in-out w-full h-full" style={{ transform: `translateX(-${currentIndex * 100}%)` }}>
+                        {items.map((activity, idx) => (
+                            <div 
+                                key={activity.id} 
+                                className={`w-full shrink-0 px-2 h-full transition-all duration-700 ease-in-out origin-center ${currentIndex === idx ? 'scale-100 opacity-100' : 'scale-90 opacity-50'}`}
+                            >
+                                <CarouselCard activity={activity} />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
         const HomePage = ({ onNavigate, auth }) => {
             const { handleLike, hasUserLiked, getTotalLikes } = useLikes(auth); 
             return (
@@ -1092,13 +1361,27 @@
                     <section className="max-w-7xl mx-auto px-8 py-32 mt-10 relative z-10"> <div className="grid grid-cols-1 md:grid-cols-3 gap-8"> <div className="md:col-span-2 glass-panel p-12 rounded-3xl relative overflow-hidden group hover:shadow-[0_20px_40px_rgba(125,211,252,0.1)] transition-all duration-500"> <div className="absolute top-0 right-0 p-8 text-primary/5 group-hover:text-primary/10 transition-colors duration-500"> <Icon name="eye" className="w-40 h-40 transform group-hover:scale-110 group-hover:rotate-12 transition-transform duration-700" /> </div> <h2 className="text-4xl font-bold text-primary mb-6">{WEBSITE_CONTENT.home.visionTitle}</h2> <p className="text-xl text-on-surface-variant leading-relaxed max-w-xl relative z-10">{WEBSITE_CONTENT.home.visionText}</p> </div> <div className="glass-panel p-10 rounded-3xl flex flex-col justify-between hover:translate-y-[-10px] transition-transform duration-500"> <div className="space-y-6"> <div className="w-14 h-14 bg-tertiary/10 rounded-2xl flex items-center justify-center border border-tertiary/20"> <Icon name="rocket" className="w-7 h-7 text-tertiary" /> </div> <h3 className="text-2xl font-bold text-on-surface">{WEBSITE_CONTENT.home.missionTitle}</h3> <p className="text-on-surface-variant">{WEBSITE_CONTENT.home.missionText}</p> </div> <div className="mt-10 pt-8 border-t border-white/5"> <div className="flex items-center gap-3 text-tertiary font-bold cursor-pointer group"> <span>Lihat Selengkapnya</span> <Icon name="arrow-right" className="w-5 h-5 group-hover:translate-x-2 transition-transform" /> </div> </div> </div> </div> </section>
                     <section className="max-w-7xl mx-auto px-8 pb-24 relative z-10">
                         <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6"> <div> <h2 className="text-4xl font-bold mb-4 text-on-surface">{WEBSITE_CONTENT.home.highlightTitle}</h2> <p className="text-on-surface-variant text-lg">{WEBSITE_CONTENT.home.highlightSubtitle}</p> </div> <button type="button" onClick={() => onNavigate('archive')} className="text-primary border-2 border-primary/30 font-bold px-8 py-3 rounded-full hover:bg-primary hover:text-white transition-all"> Arsip Lengkap </button> </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                            {ACTIVITIES.map((activity) => (
-                                <div key={activity.id} className="glass-panel rounded-3xl overflow-hidden group cursor-pointer hover:shadow-[0_15px_40px_rgba(125,211,252,0.15)] hover:translate-y-[-5px] transition-all duration-500" onClick={() => onNavigate('activity', activity)}>
-                                    <div className="h-56 overflow-hidden relative"> <img src={getImageUrl(activity)} alt={activity.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" referrerPolicy="no-referrer" /> <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div> <div className="absolute top-4 left-4 glass-panel-elevated px-4 py-1.5 rounded-xl text-xs font-bold text-primary">{activity.date}</div> </div>
-                                    <div className="p-8"> <div className="flex items-center justify-between mb-4 gap-3"> <h3 className="text-2xl font-bold text-on-surface group-hover:text-primary transition-colors">{activity.title}</h3> {activity.category && ( <span className="rounded-full bg-primary/10 px-3 py-1 text-xs uppercase tracking-wider text-primary font-bold"> {activity.category} </span> )} </div> <p className="text-on-surface-variant text-sm mb-6 line-clamp-2 leading-relaxed">{activity.description}</p> <div className="flex items-center justify-between pt-4 border-t border-white/5"> <div className="flex items-center gap-2 text-on-surface-variant text-sm"><Icon name="map-pin" className="w-4 h-4 text-primary" /><span>{activity.location}</span></div> <div className="flex items-center gap-4"> <button type="button" onClick={(e) => handleLike(activity.id, e)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-bold transition-all ${ hasUserLiked(activity.id) ? 'bg-red-500/20 text-red-400' : 'bg-black/5 dark:bg-white/5 text-on-surface-variant hover:bg-red-500/10 hover:text-red-400' }`} > <Icon name="heart" className={`w-4 h-4 ${hasUserLiked(activity.id) ? 'fill-current' : ''}`} /> <span>{getTotalLikes(activity.id) || activity.likes || 0}</span> </button> </div> </div> </div>
-                                </div>
-                            ))}
+                        
+                        <div className="flex flex-col gap-10">
+                            {/* Carousel Atas: 3 Kegiatan Terbaru */}
+                            <StandaloneCarousel 
+                                items={ACTIVITIES.slice(0, 3)} 
+                                onNavigate={onNavigate} 
+                                handleLike={handleLike} 
+                                hasUserLiked={hasUserLiked} 
+                                getTotalLikes={getTotalLikes} 
+                                autoPlayDelay={5000}
+                            />
+                            
+                            {/* Carousel Bawah: 2 Kegiatan Sisanya */}
+                            <StandaloneCarousel 
+                                items={ACTIVITIES.slice(3, 5)} 
+                                onNavigate={onNavigate} 
+                                handleLike={handleLike} 
+                                hasUserLiked={hasUserLiked} 
+                                getTotalLikes={getTotalLikes} 
+                                autoPlayDelay={6000} // Diberi delay berbeda agar pergeserannya tidak bersamaan
+                            />
                         </div>
                     </section>
                 </div>
@@ -1107,50 +1390,92 @@
 
         const ArchivePage = ({ onNavigate, auth }) => {
             const { handleLike, hasUserLiked, getTotalLikes } = useLikes(auth);
+            const [recentPage, setRecentPage] = useState(1);
+            const [pastPage, setPastPage] = useState(1);
+            const ITEMS_PER_PAGE = 10;
+
+            const totalRecentPages = Math.ceil(ACTIVITIES.length / ITEMS_PER_PAGE);
+            const totalPastPages = Math.ceil(PAST_COLLECTIONS.length / ITEMS_PER_PAGE);
+
+            const displayedRecent = ACTIVITIES.slice((recentPage - 1) * ITEMS_PER_PAGE, recentPage * ITEMS_PER_PAGE);
+            const displayedPast = PAST_COLLECTIONS.slice((pastPage - 1) * ITEMS_PER_PAGE, pastPage * ITEMS_PER_PAGE);
+
+            // Komponen Pagination yang dapat digunakan kembali
+            const Pagination = ({ currentPage, totalPages, onPageChange }) => {
+                const safeTotalPages = Math.max(1, totalPages);
+                
+                return (
+                    <div className="flex justify-center items-center gap-2 mt-14">
+                        <button 
+                            disabled={currentPage === 1} 
+                            onClick={() => onPageChange(currentPage - 1)}
+                            className="flex items-center gap-2 px-4 py-2 rounded-xl glass-panel hover:text-primary transition-colors disabled:opacity-50 disabled:hover:text-current font-bold"
+                        >
+                            <Icon name="arrow-left" className="w-4 h-4" /> Sebelumnya
+                        </button>
+                        
+                        <div className="flex items-center gap-2 px-2 md:px-4 overflow-x-auto max-w-full">
+                            {Array.from({ length: safeTotalPages }).map((_, i) => (
+                                <button 
+                                    key={i}
+                                    onClick={() => onPageChange(i + 1)}
+                                    className={`w-10 h-10 shrink-0 rounded-xl font-bold transition-all flex items-center justify-center ${currentPage === i + 1 ? 'bg-primary text-black shadow-[0_0_15px_rgba(125,211,252,0.4)]' : 'glass-panel hover:bg-primary/20 text-on-surface-variant'}`}
+                                >
+                                    {i + 1}
+                                </button>
+                            ))}
+                        </div>
+
+                        <button 
+                            disabled={currentPage === safeTotalPages} 
+                            onClick={() => onPageChange(currentPage + 1)}
+                            className="flex items-center gap-2 px-4 py-2 rounded-xl glass-panel hover:text-primary transition-colors disabled:opacity-50 disabled:hover:text-current font-bold"
+                        >
+                            Berikutnya <Icon name="arrow-right" className="w-4 h-4" />
+                        </button>
+                    </div>
+                );
+            };
+
             return (
                 <div className="pt-32 pb-20 px-6 max-w-7xl mx-auto fade-in">
                     <header className="mb-16 text-center relative z-10"> <h1 className="text-5xl md:text-6xl font-extrabold text-on-surface tracking-tight mb-4"> {WEBSITE_CONTENT.archive.title.split(' ')[0]} <span className="text-primary">{WEBSITE_CONTENT.archive.title.split(' ')[1]}</span> </h1> <p className="text-on-surface-variant max-w-2xl mx-auto text-lg">{WEBSITE_CONTENT.archive.subtitle}</p> </header>
+                    
+                    {/* Bagian Dokumentasi Terkini */}
                     <section className="mb-24 relative z-10">
                         <div className="flex items-center gap-3 mb-10"> <Icon name="history" className="text-primary w-8 h-8" /> <h2 className="text-3xl font-bold tracking-tight text-on-surface">{WEBSITE_CONTENT.archive.recentTitle}</h2> </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                            {ACTIVITIES.map((activity) => (
-                                <div key={activity.id} onClick={() => onNavigate('activity', activity)} className="glass-panel rounded-xl overflow-hidden group hover:shadow-[0_0_30px_rgba(125,211,252,0.1)] transition-all duration-500 cursor-pointer">
-                                    <div className="h-56 w-full overflow-hidden relative"> <img src={getImageUrl(activity)} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" referrerPolicy="no-referrer" /> <div className="absolute top-4 left-4 glass-panel-elevated px-3 py-1 rounded-full text-xs font-bold text-on-surface-variant tracking-widest uppercase">{activity.status}</div> </div>
-                                    <div className="p-8"> <div className="flex items-center gap-2 text-primary text-sm font-medium mb-3"><Icon name="calendar" className="w-4 h-4" />{activity.date}</div> <h3 className="text-xl font-bold text-on-surface mb-3 group-hover:text-primary transition-colors cursor-pointer">{activity.title}</h3> <p className="text-on-surface-variant text-sm leading-relaxed mb-6 line-clamp-3">{activity.description}</p> <div className="flex items-center justify-between gap-3"> <button type="button" onClick={(e) => handleLike(activity.id, e)} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${ hasUserLiked(activity.id) ? 'bg-red-500/20 text-red-400' : 'bg-black/5 dark:bg-white/5 text-on-surface-variant hover:bg-red-500/10 hover:text-red-400' }`} > <Icon name="heart" className={`w-4 h-4 ${hasUserLiked(activity.id) ? 'fill-current' : ''}`} /> <span>{getTotalLikes(activity.id) || activity.likes || 0}</span> </button> <div className="w-full py-3 rounded-lg border border-primary/30 text-primary font-semibold glass-panel-elevated group-hover:bg-primary/20 transition-all duration-300 flex items-center justify-center gap-2"> <Icon name="eye" className="w-4 h-4" />Lihat Detail </div> </div> </div>
+                            {displayedRecent.map((activity) => (
+                                <div key={activity.id} onClick={() => onNavigate('activity', activity)} className="glass-panel rounded-xl overflow-hidden group hover:shadow-[0_0_30px_rgba(125,211,252,0.1)] transition-all duration-500 cursor-pointer flex flex-col">
+                                    <div className="h-56 w-full overflow-hidden relative shrink-0"> <img src={getImageUrl(activity)} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" referrerPolicy="no-referrer" /> <div className="absolute top-4 left-4 glass-panel-elevated px-3 py-1 rounded-full text-xs font-bold text-on-surface-variant tracking-widest uppercase">{activity.status}</div> </div>
+                                    <div className="p-8 flex flex-col flex-grow"> <div className="flex items-center gap-2 text-primary text-sm font-medium mb-3"><Icon name="calendar" className="w-4 h-4" />{activity.date}</div> <h3 className="text-xl font-bold text-on-surface mb-3 group-hover:text-primary transition-colors cursor-pointer">{activity.title}</h3> <p className="text-on-surface-variant text-sm leading-relaxed mb-6 line-clamp-3 flex-grow">{activity.description}</p> <div className="flex items-center justify-between gap-3 mt-auto pt-4 border-t border-white/5"> <button type="button" onClick={(e) => handleLike(activity.id, e)} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${ hasUserLiked(activity.id) ? 'bg-red-500/20 text-red-400' : 'bg-black/5 dark:bg-white/5 text-on-surface-variant hover:bg-red-500/10 hover:text-red-400' }`} > <Icon name="heart" className={`w-4 h-4 ${hasUserLiked(activity.id) ? 'fill-current' : ''}`} /> <span>{getTotalLikes(activity.id) || activity.likes || 0}</span> </button> <div className="w-full py-2.5 rounded-lg border border-primary/30 text-primary font-semibold glass-panel-elevated group-hover:bg-primary/20 transition-all duration-300 flex items-center justify-center gap-2"> <Icon name="eye" className="w-4 h-4" />Lihat Detail </div> </div> </div>
                                 </div>
                             ))}
                         </div>
+                        {/* Navigasi Halaman Dokumentasi Terkini */}
+                        <Pagination currentPage={recentPage} totalPages={totalRecentPages} onPageChange={setRecentPage} />
                     </section>
+
+                    {/* Bagian Koleksi Masa Lalu */}
                     <section className="mb-24 relative z-10">
                         <div className="flex items-center gap-3 mb-10"> <Icon name="history" className="text-on-surface-variant w-8 h-8" /> <h2 className="text-3xl font-bold tracking-tight text-on-surface">{WEBSITE_CONTENT.archive.pastTitle}</h2> </div>
                         <div className="grid grid-cols-1 md:grid-cols-4 md:grid-rows-2 gap-6">
-                            {PAST_COLLECTIONS.map((item, idx) => (
-                                <div key={item.id} onClick={() => onNavigate('activity', { ...item, status: 'Arsip', location: 'N/A' })} className={`glass-panel rounded-xl overflow-hidden group relative min-h-[300px] cursor-pointer ${idx === 0 ? "md:col-span-2 md:row-span-2" : idx === 1 ? "md:col-span-2 md:row-span-1" : "md:col-span-1 md:row-span-1"}`}>
+                            {displayedPast.map((item, idx) => (
+                                <div key={item.id} onClick={() => onNavigate('activity', { ...item, status: 'Arsip', location: 'N/A' })} className={`glass-panel rounded-xl overflow-hidden group relative min-h-[300px] cursor-pointer flex flex-col ${idx === 0 ? "md:col-span-2 md:row-span-2" : idx === 1 ? "md:col-span-2 md:row-span-1" : "md:col-span-1 md:row-span-1"}`}>
                                     <img src={getImageUrl(item)} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" referrerPolicy="no-referrer" /> <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
-                                    <div className="absolute bottom-0 left-0 p-8 w-full"> <div className="text-primary text-xs font-bold mb-2 tracking-[0.2em] uppercase">{item.category}</div> <h3 className="text-2xl font-bold mb-3 text-white">{item.title}</h3> <p className="text-slate-200 text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-500 mb-4">{item.description}</p> <button type="button" onClick={(e) => handleLike(item.id, e)} className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${ hasUserLiked(item.id) ? 'bg-red-500/20 text-red-400' : 'bg-white/10 text-white hover:bg-red-500/20 hover:text-red-400' }`} > <Icon name="heart" className={`w-4 h-4 ${hasUserLiked(item.id) ? 'fill-current' : ''}`} /> <span>{getTotalLikes(item.id) || item.likes || 0}</span> </button> </div>
+                                    <div className="absolute bottom-0 left-0 p-8 w-full mt-auto"> <div className="text-primary text-xs font-bold mb-2 tracking-[0.2em] uppercase">{item.category}</div> <h3 className="text-2xl font-bold mb-3 text-white line-clamp-2">{item.title}</h3> <p className="text-slate-200 text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-500 mb-4 line-clamp-2">{item.description}</p> <button type="button" onClick={(e) => handleLike(item.id, e)} className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all w-fit ${ hasUserLiked(item.id) ? 'bg-red-500/20 text-red-400' : 'bg-white/10 text-white hover:bg-red-500/20 hover:text-red-400' }`} > <Icon name="heart" className={`w-4 h-4 ${hasUserLiked(item.id) ? 'fill-current' : ''}`} /> <span>{getTotalLikes(item.id) || item.likes || 0}</span> </button> </div>
                                 </div>
                             ))}
                         </div>
+                        {/* Navigasi Halaman Koleksi Masa Lalu */}
+                        <Pagination currentPage={pastPage} totalPages={totalPastPages} onPageChange={setPastPage} />
                     </section>
                 </div>
             );
         };
 
-        const AccountPage = ({ auth, onNavigate }) => {
-            if (!auth.user) {
-                return (
-                    <div className="pt-32 pb-20 px-6 max-w-7xl mx-auto text-center fade-in">
-                        <div className="glass-panel p-12 rounded-3xl max-w-md mx-auto">
-                            <Icon name="user-x" className="w-16 h-16 text-on-surface-variant mx-auto mb-4 opacity-50" />
-                            <h2 className="text-2xl font-bold mb-4 text-on-surface">Anda Belum Login</h2>
-                            <p className="text-on-surface-variant mb-8">Silakan masuk untuk mengakses halaman akun dan pengaturan.</p>
-                            <button onClick={() => window.dispatchEvent(new CustomEvent('openAuthModal'))} className="w-full py-3 bg-primary text-black font-bold rounded-xl hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-primary/20">
-                                Masuk Sekarang
-                            </button>
-                        </div>
-                    </div>
-                );
-            }
+        const AccountPage = ({ auth, onNavigate, animationLevel, setAnimationLevel }) => {
+            const [isSettingsExpanded, setIsSettingsExpanded] = useState(false);
 
             return (
                 <div className="pt-28 pb-20 px-4 md:px-6 max-w-3xl mx-auto fade-in relative z-10">
@@ -1158,28 +1483,72 @@
                         <Icon name="arrow-left" className="w-5 h-5" /> Kembali
                     </button>
                     <header className="text-center mb-10 relative z-10"> 
-                        <h1 className="text-4xl md:text-5xl font-extrabold text-on-surface tracking-tight mb-4"> Akun <span className="text-primary">Saya</span> </h1> 
+                        <h1 className="text-4xl md:text-5xl font-extrabold text-on-surface tracking-tight mb-4"> Pengaturan <span className="text-primary">Akun</span> </h1> 
                     </header>
                     <div className="glass-panel p-6 md:p-12 rounded-3xl flex flex-col items-center relative z-10 hover:shadow-[0_15px_40px_rgba(125,211,252,0.1)] transition-all duration-500">
                         <div className="w-28 h-28 md:w-40 md:h-40 rounded-full overflow-hidden border-4 border-primary/50 relative bg-background/50 flex items-center justify-center shadow-2xl mb-6 group">
-                            {auth.userProfile?.photo ? (
+                            {auth.user && auth.userProfile?.photo ? (
                                 <img src={auth.userProfile.photo} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                             ) : (
                                 <Icon name="user" className="w-12 h-12 md:w-20 md:h-20 text-on-surface-variant group-hover:scale-110 transition-transform duration-500"/>
                             )}
                         </div>
-                        <h2 className="text-2xl md:text-3xl font-extrabold text-on-surface mb-2 tracking-tight">{auth.userProfile?.name || 'Anggota'}</h2>
-                        <p className="text-on-surface-variant text-xs md:text-base mb-8 md:mb-10 bg-black/20 dark:bg-white/5 px-4 py-1.5 rounded-full border border-white/5">{auth.user.email}</p>
+                        <h2 className="text-2xl md:text-3xl font-extrabold text-on-surface mb-2 tracking-tight">{auth.user ? (auth.userProfile?.name || 'Anggota') : 'Tamu'}</h2>
+                        {auth.user ? (
+                            <p className="text-on-surface-variant text-xs md:text-base mb-8 md:mb-10 bg-black/20 dark:bg-white/5 px-4 py-1.5 rounded-full border border-white/5">{auth.user.email}</p>
+                        ) : (
+                            <p className="text-on-surface-variant text-xs md:text-base mb-8 md:mb-10 px-4 py-1.5">Silakan masuk untuk pengalaman penuh</p>
+                        )}
 
                         <div className="w-full space-y-3 md:space-y-4">
                             <button onClick={() => window.dispatchEvent(new CustomEvent('openAuthModal'))} className="w-full p-4 md:p-5 glass-panel-elevated rounded-2xl flex items-center gap-4 md:gap-5 hover:bg-primary/10 hover:border-primary/30 transition-all duration-300 group text-left">
-                                <div className="p-3 md:p-3.5 bg-primary/20 rounded-xl group-hover:scale-110 group-hover:bg-primary/30 transition-all shadow-inner border border-primary/20"><Icon name="edit-3" className="w-5 h-5 md:w-6 md:h-6 text-primary" /></div>
+                                <div className="p-3 md:p-3.5 bg-primary/20 rounded-xl group-hover:scale-110 group-hover:bg-primary/30 transition-all shadow-inner border border-primary/20">
+                                    <Icon name={auth.user ? "edit-3" : "log-in"} className="w-5 h-5 md:w-6 md:h-6 text-primary" />
+                                </div>
                                 <div className="flex-1">
-                                    <h3 className="font-bold text-base md:text-lg text-on-surface mb-0.5 group-hover:text-primary transition-colors">Edit Profil</h3>
-                                    <p className="text-xs md:text-sm text-on-surface-variant">Ubah nama dan foto profil Anda</p>
+                                    <h3 className="font-bold text-base md:text-lg text-on-surface mb-0.5 group-hover:text-primary transition-colors">
+                                        {auth.user ? 'Edit Profil' : 'Login atau Registrasi'}
+                                    </h3>
+                                    <p className="text-xs md:text-sm text-on-surface-variant">
+                                        {auth.user ? 'Ubah nama dan foto profil Anda' : 'Masuk untuk mengakses semua fitur'}
+                                    </p>
                                 </div>
                                 <Icon name="chevron-right" className="text-on-surface-variant group-hover:text-primary transition-colors group-hover:translate-x-1" />
                             </button>
+
+                            {/* Pengaturan Lainnya (Accordion) */}
+                            <div className="w-full glass-panel-elevated rounded-2xl overflow-hidden transition-all duration-500">
+                                <button onClick={() => setIsSettingsExpanded(!isSettingsExpanded)} className="w-full p-4 md:p-5 flex items-center gap-4 md:gap-5 hover:bg-blue-500/10 transition-all duration-300 group text-left">
+                                    <div className="p-3 md:p-3.5 bg-blue-500/20 rounded-xl group-hover:scale-110 group-hover:bg-blue-500/30 transition-all shadow-inner border border-blue-500/20"><Icon name="settings" className="w-5 h-5 md:w-6 md:h-6 text-blue-400" /></div>
+                                    <div className="flex-1">
+                                        <h3 className="font-bold text-base md:text-lg text-on-surface mb-0.5 group-hover:text-blue-400 transition-colors">Pengaturan Lainnya</h3>
+                                        <p className="text-xs md:text-sm text-on-surface-variant">Performa, privasi, dan preferensi</p>
+                                    </div>
+                                    <Icon name={isSettingsExpanded ? "chevron-down" : "chevron-right"} className="text-on-surface-variant group-hover:text-blue-400 transition-colors" />
+                                </button>
+                                
+                                {isSettingsExpanded && (
+                                    <div className="px-4 md:px-5 pb-5 pt-2 border-t border-white/5 bg-black/10">
+                                        <div className="p-4 bg-background/30 rounded-xl border border-white/5">
+                                            <div className="flex justify-between items-center mb-3">
+                                                <div>
+                                                    <h4 className="font-bold text-sm text-on-surface">Render Animasi 3D</h4>
+                                                    <p className="text-xs text-on-surface-variant">Sesuaikan jumlah partikel 3D</p>
+                                                </div>
+                                                <span className="text-blue-400 font-bold px-2 py-1 bg-blue-500/10 rounded-lg text-sm">{animationLevel}%</span>
+                                            </div>
+                                            <input 
+                                                type="range" 
+                                                min="0" max="100" step="10" 
+                                                value={animationLevel} 
+                                                onChange={(e) => setAnimationLevel(Number(e.target.value))} 
+                                                className="w-full h-2 bg-black/20 dark:bg-white/10 rounded-lg appearance-none cursor-pointer accent-blue-400 focus:outline-none"
+                                            />
+                                            {animationLevel === 0 && <p className="text-xs text-red-400 mt-2">Animasi latar belakang dinonaktifkan (Mode Hemat Daya).</p>}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
 
                             <button className="w-full p-4 md:p-5 glass-panel-elevated rounded-2xl flex items-center gap-4 md:gap-5 hover:bg-tertiary/10 hover:border-tertiary/30 transition-all duration-300 group text-left">
                                 <div className="p-3 md:p-3.5 bg-tertiary/20 rounded-xl group-hover:scale-110 group-hover:bg-tertiary/30 transition-all shadow-inner border border-tertiary/20"><Icon name="terminal" className="w-5 h-5 md:w-6 md:h-6 text-tertiary" /></div>
@@ -1189,26 +1558,19 @@
                                 </div>
                                 <Icon name="chevron-right" className="text-on-surface-variant group-hover:text-tertiary transition-colors group-hover:translate-x-1" />
                             </button>
-                            
-                            <button className="w-full p-4 md:p-5 glass-panel-elevated rounded-2xl flex items-center gap-4 md:gap-5 hover:bg-blue-500/10 hover:border-blue-500/30 transition-all duration-300 group text-left">
-                                <div className="p-3 md:p-3.5 bg-blue-500/20 rounded-xl group-hover:scale-110 group-hover:bg-blue-500/30 transition-all shadow-inner border border-blue-500/20"><Icon name="settings" className="w-5 h-5 md:w-6 md:h-6 text-blue-400" /></div>
-                                <div className="flex-1">
-                                    <h3 className="font-bold text-base md:text-lg text-on-surface mb-0.5 group-hover:text-blue-400 transition-colors">Pengaturan Lainnya</h3>
-                                    <p className="text-xs md:text-sm text-on-surface-variant">Privasi, notifikasi, dan preferensi akun</p>
-                                </div>
-                                <Icon name="chevron-right" className="text-on-surface-variant group-hover:text-blue-400 transition-colors group-hover:translate-x-1" />
-                            </button>
 
-                            <div className="pt-4 md:pt-6 mt-4 md:mt-6 border-t border-white/10">
-                                <button onClick={() => { auth.logout(); onNavigate('home'); }} className="w-full p-4 md:p-5 glass-panel border-red-500/30 rounded-2xl flex items-center gap-4 md:gap-5 hover:bg-red-500/10 hover:border-red-500/50 transition-all duration-300 group text-left">
-                                    <div className="p-3 md:p-3.5 bg-red-500/20 rounded-xl group-hover:scale-110 group-hover:bg-red-500/30 transition-all shadow-inner border border-red-500/20"><Icon name="log-out" className="w-5 h-5 md:w-6 md:h-6 text-red-400" /></div>
-                                    <div className="flex-1">
-                                        <h3 className="font-bold text-base md:text-lg text-red-400 mb-0.5">Keluar Akun</h3>
-                                        <p className="text-xs md:text-sm text-red-400/70">Akhiri sesi Anda saat ini</p>
-                                    </div>
-                                    <Icon name="chevron-right" className="text-red-400/50 group-hover:text-red-400 transition-colors group-hover:translate-x-1" />
-                                </button>
-                            </div>
+                            {auth.user && (
+                                <div className="pt-4 md:pt-6 mt-4 md:mt-6 border-t border-white/10">
+                                    <button onClick={() => { auth.logout(); onNavigate('home'); }} className="w-full p-4 md:p-5 glass-panel border-red-500/30 rounded-2xl flex items-center gap-4 md:gap-5 hover:bg-red-500/10 hover:border-red-500/50 transition-all duration-300 group text-left">
+                                        <div className="p-3 md:p-3.5 bg-red-500/20 rounded-xl group-hover:scale-110 group-hover:bg-red-500/30 transition-all shadow-inner border border-red-500/20"><Icon name="log-out" className="w-5 h-5 md:w-6 md:h-6 text-red-400" /></div>
+                                        <div className="flex-1">
+                                            <h3 className="font-bold text-base md:text-lg text-red-400 mb-0.5">Keluar Akun</h3>
+                                            <p className="text-xs md:text-sm text-red-400/70">Akhiri sesi Anda saat ini</p>
+                                        </div>
+                                        <Icon name="chevron-right" className="text-red-400/50 group-hover:text-red-400 transition-colors group-hover:translate-x-1" />
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -1264,6 +1626,12 @@
             const [isLightMode, setIsLightMode] = useState(() => localStorage.getItem('paskanessTheme') === 'light');
             const [showAuthModal, setShowAuthModal] = useState(false);
             
+            // Pengaturan performa render animasi 3D (default 50%)
+            const [animationLevel, setAnimationLevel] = useState(() => {
+                const saved = localStorage.getItem('paskanessAnimationLevel');
+                return saved !== null ? parseInt(saved, 10) : 50;
+            });
+            
             // Mengambil fungsi auth (Login & Database Bergilir)
             const auth = useAuth();
 
@@ -1285,13 +1653,17 @@
                 else { document.documentElement.classList.remove('light-mode'); localStorage.setItem('paskanessTheme', 'dark'); }
             }, [isLightMode]);
 
+            useEffect(() => {
+                localStorage.setItem('paskanessAnimationLevel', animationLevel);
+            }, [animationLevel]);
+
             const toggleTheme = () => setIsLightMode(!isLightMode);
             useEffect(() => { document.title = `${WEBSITE_CONFIG.brandName} - Jejak Karya & Arsip`; }, []);
             useEffect(() => { window.scrollTo(0, 0); if (window.lucide) window.lucide.createIcons(); }, [activeTab]);
 
             return (
                 <div className="min-h-screen flex flex-col relative z-0">
-                    {activeTab !== 'activity' && activeTab !== 'account' && <Background3DObjects />}
+                    {activeTab !== 'activity' && activeTab !== 'account' && <Background3DObjects animationLevel={animationLevel} />}
                     
                     {/* Mengirimkan data profil pengguna ke Navbar agar muncul di pojok kiri atas */}
                     <Navbar activeTab={activeTab} setActiveTab={handleNavigate} isLightMode={isLightMode} toggleTheme={toggleTheme} auth={auth} />
@@ -1301,7 +1673,7 @@
                         {activeTab === 'home' && <HomePage onNavigate={handleNavigate} auth={auth} />}
                         {activeTab === 'archive' && <ArchivePage onNavigate={handleNavigate} auth={auth} />}
                         {activeTab === 'structure' && <StructurePage />}
-                        {activeTab === 'account' && <AccountPage auth={auth} onNavigate={handleNavigate} />}
+                        {activeTab === 'account' && <AccountPage auth={auth} onNavigate={handleNavigate} animationLevel={animationLevel} setAnimationLevel={setAnimationLevel} />}
                         {activeTab === 'activity' && <ActivityPage activity={selectedActivity} onBack={() => handleNavigate('archive')} onNavigate={handleNavigate} auth={auth} />}
                     </main>
                     <Footer />
