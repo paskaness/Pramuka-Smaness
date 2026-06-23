@@ -924,30 +924,108 @@
             </footer>
         );
 
-        const ActivityModal = ({ activity, onClose, auth }) => {
+        const ActivityPage = ({ activity, onBack, onNavigate, auth }) => {
+            const [showComments, setShowComments] = useState(false);
+            const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+            const { handleLike, hasUserLiked, getTotalLikes } = useLikes();
+
+            useEffect(() => {
+                window.scrollTo(0, 0);
+                setIsDescriptionExpanded(false); // Reset when activity changes
+            }, [activity]);
+
             if (!activity) return null;
+
             return (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8">
-                    <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={onClose}></div>
-                    <div className="glass-panel-elevated w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl relative z-10 animate-in fade-in zoom-in duration-300">
-                        <button type="button" onClick={onClose} className="absolute top-6 right-6 p-2 rounded-full bg-black/10 hover:bg-black/20 dark:bg-white/5 dark:hover:bg-white/10 transition-colors z-20"> <Icon name="x" className="w-6 h-6" /> </button>
-                        <div className="flex flex-col md:flex-row">
-                            <div className="md:w-1/2 h-64 md:h-auto relative"> <img src={getImageUrl(activity)} className="w-full h-full object-cover" referrerPolicy="no-referrer" /> </div>
-                            <div className="md:w-1/2 p-8 md:p-12">
-                                <div className="flex items-center gap-3 mb-6"> <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold tracking-widest uppercase"> {activity.status || activity.category} </span> <span className="text-on-surface-variant text-sm font-medium">{activity.date || 'Arsip'}</span> </div>
-                                <h2 className="text-3xl md:text-4xl font-bold mb-6 tracking-tight leading-tight text-on-surface">{activity.title}</h2>
-                                <div className="space-y-6 mb-8">
-                                    <div className="flex items-start gap-4"> <div className="p-2 rounded-lg bg-primary/5"><Icon name="map-pin" className="w-5 h-5 text-primary" /></div> <div> <p className="text-xs text-on-surface-variant font-bold uppercase tracking-widest mb-1">Lokasi</p> <p className="text-on-surface">{activity.location || 'Lokasi tidak tersedia'}</p> </div> </div>
-                                    <div className="flex items-start gap-4"> <div className="p-2 rounded-lg bg-primary/5"><Icon name="info" className="w-5 h-5 text-primary" /></div> <div> <p className="text-xs text-on-surface-variant font-bold uppercase tracking-widest mb-1">Deskripsi</p> <p className="text-on-surface-variant leading-relaxed">{activity.description}</p> </div> </div>
-                                    {activity.documentation && activity.documentation.length > 0 && (
-                                        <div className="flex items-start gap-4"> <div className="p-2 rounded-lg bg-primary/5"><Icon name="file-text" className="w-5 h-5 text-primary" /></div> <div className="w-full"> <p className="text-xs text-on-surface-variant font-bold uppercase tracking-widest mb-3 border-b-2 border-primary">Dokumentasi</p> <div className="space-y-2"> {activity.documentation.filter(doc => doc.title.toLowerCase().includes('foto') || doc.title.toLowerCase().includes('galeri') || doc.title.toLowerCase().includes('album')).map((doc, index) => ( <a key={index} href={doc.link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-3 rounded-lg bg-primary text-white hover:opacity-90 transition-colors group" > <Icon name="external-link" className="w-4 h-4 text-white group-hover:scale-110 transition-transform" /> <span className="text-white group-hover:text-white transition-colors">Foto Dokumentasi</span> </a> ))} </div> </div> </div>
-                                    )}
+                <div className="pt-28 pb-20 px-4 md:px-8 max-w-7xl mx-auto fade-in relative z-10">
+                    <button onClick={onBack} className="mb-6 flex items-center gap-2 px-4 py-2 rounded-full glass-panel text-on-surface-variant hover:text-primary transition-colors w-fit border-white/10">
+                        <Icon name="arrow-left" className="w-5 h-5" /> Kembali
+                    </button>
+
+                    <div className="flex flex-col lg:flex-row gap-8">
+                        <div className="lg:w-[68%]">
+                            <div className="w-full aspect-video rounded-2xl overflow-hidden bg-black/80 border border-white/5 shadow-2xl mb-6 flex items-center justify-center">
+                                <img src={getImageUrl(activity)} className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+                            </div>
+
+                            <h1 className="text-2xl md:text-3xl font-extrabold text-on-surface mb-3 tracking-tight">{activity.title}</h1>
+                            
+                            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-5 mb-6">
+                                <div className="flex flex-wrap items-center gap-4 text-sm font-bold text-on-surface-variant">
+                                    <span className="px-3 py-1 rounded-md bg-primary/10 text-primary uppercase tracking-widest text-xs">{activity.status || activity.category}</span>
+                                    <span className="flex items-center gap-1.5"><Icon name="calendar" className="w-4 h-4" />{activity.date || 'Arsip'}</span>
+                                    <span className="flex items-center gap-1.5"><Icon name="map-pin" className="w-4 h-4" />{activity.location || 'N/A'}</span>
                                 </div>
-                                <div className="flex gap-3">
-                                    <button type="button" onClick={() => { const shareUrl = `${window.location.origin}${window.location.pathname}#activity-${activity.id}`; const shareText = `Lihat dokumentasi kegiatan: ${activity.title}`; if (navigator.share) { navigator.share({ title: activity.title, text: shareText, url: shareUrl }); } else { navigator.clipboard.writeText(`${shareText} ${shareUrl}`); alert('Link berhasil disalin ke clipboard!'); } }} className="flex-1 py-4 rounded-xl glass-panel text-primary font-bold hover:bg-primary/10 transition-all shadow-lg shadow-primary/10 flex items-center justify-center gap-2" > <Icon name="share-2" className="w-5 h-5" /> Bagikan </button>
-                                    {(!activity.documentation || activity.documentation.length === 0) && ( <button type="button" className="flex-1 py-4 rounded-xl bg-primary text-white font-bold hover:opacity-90 transition-all shadow-lg shadow-primary/20"> Lihat Dokumentasi </button> )}
+                                <div className="flex items-center gap-3">
+                                    <button type="button" onClick={(e) => handleLike(activity.id, e)} className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all ${ hasUserLiked(activity.id) ? 'bg-red-500/20 text-red-400' : 'bg-black/20 dark:bg-white/5 text-on-surface hover:bg-red-500/10 hover:text-red-400' }`}>
+                                        <Icon name="heart" className={`w-4 h-4 ${hasUserLiked(activity.id) ? 'fill-current' : ''}`} /> 
+                                        <span>{getTotalLikes(activity.id) || activity.likes || 0}</span>
+                                    </button>
+                                    <button type="button" onClick={() => { const shareUrl = window.location.href; const shareText = `Lihat: ${activity.title}`; if (navigator.share) navigator.share({ title: activity.title, text: shareText, url: shareUrl }); else alert('Salin link ini: ' + shareUrl); }} className="flex items-center gap-2 px-4 py-2 rounded-full bg-black/20 dark:bg-white/5 text-on-surface hover:bg-black/40 dark:hover:bg-white/10 transition-colors font-bold text-sm">
+                                        <Icon name="share-2" className="w-4 h-4" /> Bagikan
+                                    </button>
                                 </div>
-                                <CommentsSection activityId={activity.id} auth={auth} />
+                            </div>
+
+                            <div className="glass-panel p-6 md:p-8 rounded-2xl mb-8">
+                                <div className={`text-on-surface-variant leading-relaxed text-base ${isDescriptionExpanded ? '' : 'line-clamp-3'}`}>
+                                    {activity.description}
+                                </div>
+                                {activity.description && activity.description.length > 100 && (
+                                    <button 
+                                        onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                                        className="text-primary font-bold mt-3 hover:underline text-sm flex items-center gap-1"
+                                    >
+                                        {isDescriptionExpanded ? 'Tampilkan Lebih Sedikit' : 'Lihat Selengkapnya'} 
+                                        <Icon name={isDescriptionExpanded ? "chevron-up" : "chevron-down"} className="w-4 h-4" />
+                                    </button>
+                                )}
+                                
+                                {activity.documentation && activity.documentation.length > 0 && (
+                                    <div className="mt-6 pt-6 border-t border-white/5">
+                                        <h3 className="font-bold text-on-surface mb-4 flex items-center gap-2"><Icon name="folder" className="w-5 h-5 text-primary" /> File Dokumentasi</h3>
+                                        <div className="flex flex-wrap gap-3">
+                                            {activity.documentation.filter(doc => doc.title.toLowerCase().includes('foto') || doc.title.toLowerCase().includes('galeri') || doc.title.toLowerCase().includes('album')).map((doc, index) => (
+                                                <a key={index} href={doc.link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-black hover:brightness-110 transition-all font-bold shadow-lg shadow-primary/20 text-sm">
+                                                    <Icon name="external-link" className="w-4 h-4" /> Buka Foto / Drive
+                                                </a>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="mb-8 relative">
+                                {!showComments ? (
+                                    <button onClick={() => setShowComments(true)} className="w-full py-5 rounded-2xl border-2 border-primary/20 bg-primary/5 text-primary hover:bg-primary/10 font-bold flex items-center justify-center gap-3 transition-all text-lg">
+                                        <Icon name="message-square" className="w-6 h-6" /> Tampilkan Komentar
+                                    </button>
+                                ) : (
+                                    <div className="glass-panel-elevated p-6 md:p-8 rounded-3xl fade-in border border-primary/20 relative">
+                                        <button onClick={() => setShowComments(false)} className="absolute top-6 right-6 text-on-surface-variant hover:text-red-400 text-sm font-bold flex items-center gap-1.5 bg-black/10 dark:bg-white/5 px-3 py-1.5 rounded-full transition-colors z-10">
+                                            Tutup <Icon name="chevron-up" className="w-4 h-4" />
+                                        </button>
+                                        <CommentsSection activityId={activity.id} auth={auth} />
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="lg:w-[32%]">
+                            <h3 className="text-lg font-bold text-on-surface mb-4 px-2">Kegiatan Lainnya</h3>
+                            <div className="flex flex-col gap-3">
+                                {ACTIVITIES.filter(a => a.id !== activity.id).slice(0, 6).map(a => (
+                                    <div key={a.id} onClick={() => onNavigate('activity', a)} className="flex gap-3 p-2 rounded-xl cursor-pointer hover:bg-black/5 dark:bg-white/5 transition-colors group">
+                                        <div className="w-40 h-24 shrink-0 rounded-lg overflow-hidden bg-black/20 relative">
+                                            <img src={getImageUrl(a)} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                            <div className="absolute bottom-1 right-1 bg-black/70 px-1.5 py-0.5 rounded text-[10px] font-bold text-white tracking-wider">{a.category}</div>
+                                        </div>
+                                        <div className="flex flex-col py-0.5 justify-between">
+                                            <h4 className="font-bold text-on-surface text-sm line-clamp-2 leading-snug group-hover:text-primary transition-colors">{a.title}</h4>
+                                            <p className="text-xs text-on-surface-variant font-medium mt-1">{a.date}</p>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         </div>
                     </div>
@@ -956,7 +1034,6 @@
         };
 
         const HomePage = ({ onNavigate, auth }) => {
-            const [selectedActivity, setSelectedActivity] = useState(null);
             const { handleLike, hasUserLiked, getTotalLikes } = useLikes(); 
             return (
                 <div className="fade-in pb-12">
@@ -967,20 +1044,18 @@
                         <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6"> <div> <h2 className="text-4xl font-bold mb-4 text-on-surface">{WEBSITE_CONTENT.home.highlightTitle}</h2> <p className="text-on-surface-variant text-lg">{WEBSITE_CONTENT.home.highlightSubtitle}</p> </div> <button type="button" onClick={() => onNavigate('archive')} className="text-primary border-2 border-primary/30 font-bold px-8 py-3 rounded-full hover:bg-primary hover:text-white transition-all"> Arsip Lengkap </button> </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                             {ACTIVITIES.map((activity) => (
-                                <div key={activity.id} className="glass-panel rounded-3xl overflow-hidden group cursor-pointer hover:shadow-[0_15px_40px_rgba(125,211,252,0.15)] hover:translate-y-[-5px] transition-all duration-500" onClick={() => setSelectedActivity(activity)}>
+                                <div key={activity.id} className="glass-panel rounded-3xl overflow-hidden group cursor-pointer hover:shadow-[0_15px_40px_rgba(125,211,252,0.15)] hover:translate-y-[-5px] transition-all duration-500" onClick={() => onNavigate('activity', activity)}>
                                     <div className="h-56 overflow-hidden relative"> <img src={getImageUrl(activity)} alt={activity.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" referrerPolicy="no-referrer" /> <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div> <div className="absolute top-4 left-4 glass-panel-elevated px-4 py-1.5 rounded-xl text-xs font-bold text-primary">{activity.date}</div> </div>
                                     <div className="p-8"> <div className="flex items-center justify-between mb-4 gap-3"> <h3 className="text-2xl font-bold text-on-surface group-hover:text-primary transition-colors">{activity.title}</h3> {activity.category && ( <span className="rounded-full bg-primary/10 px-3 py-1 text-xs uppercase tracking-wider text-primary font-bold"> {activity.category} </span> )} </div> <p className="text-on-surface-variant text-sm mb-6 line-clamp-2 leading-relaxed">{activity.description}</p> <div className="flex items-center justify-between pt-4 border-t border-white/5"> <div className="flex items-center gap-2 text-on-surface-variant text-sm"><Icon name="map-pin" className="w-4 h-4 text-primary" /><span>{activity.location}</span></div> <div className="flex items-center gap-4"> <button type="button" onClick={(e) => handleLike(activity.id, e)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-bold transition-all ${ hasUserLiked(activity.id) ? 'bg-red-500/20 text-red-400' : 'bg-black/5 dark:bg-white/5 text-on-surface-variant hover:bg-red-500/10 hover:text-red-400' }`} > <Icon name="heart" className={`w-4 h-4 ${hasUserLiked(activity.id) ? 'fill-current' : ''}`} /> <span>{getTotalLikes(activity.id) || activity.likes || 0}</span> </button> </div> </div> </div>
                                 </div>
                             ))}
                         </div>
                     </section>
-                    <ActivityModal activity={selectedActivity} onClose={() => setSelectedActivity(null)} auth={auth} />
                 </div>
             );
         };
 
-        const ArchivePage = ({ auth }) => {
-            const [selectedActivity, setSelectedActivity] = useState(null);
+        const ArchivePage = ({ onNavigate, auth }) => {
             const { handleLike, hasUserLiked, getTotalLikes } = useLikes();
             return (
                 <div className="pt-32 pb-20 px-6 max-w-7xl mx-auto fade-in">
@@ -989,9 +1064,9 @@
                         <div className="flex items-center gap-3 mb-10"> <Icon name="history" className="text-primary w-8 h-8" /> <h2 className="text-3xl font-bold tracking-tight text-on-surface">{WEBSITE_CONTENT.archive.recentTitle}</h2> </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                             {ACTIVITIES.map((activity) => (
-                                <div key={activity.id} onClick={() => setSelectedActivity(activity)} className="glass-panel rounded-xl overflow-hidden group hover:shadow-[0_0_30px_rgba(125,211,252,0.1)] transition-all duration-500 cursor-pointer">
+                                <div key={activity.id} onClick={() => onNavigate('activity', activity)} className="glass-panel rounded-xl overflow-hidden group hover:shadow-[0_0_30px_rgba(125,211,252,0.1)] transition-all duration-500 cursor-pointer">
                                     <div className="h-56 w-full overflow-hidden relative"> <img src={getImageUrl(activity)} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" referrerPolicy="no-referrer" /> <div className="absolute top-4 left-4 glass-panel-elevated px-3 py-1 rounded-full text-xs font-bold text-on-surface-variant tracking-widest uppercase">{activity.status}</div> </div>
-                                    <div className="p-8"> <div className="flex items-center gap-2 text-primary text-sm font-medium mb-3"><Icon name="calendar" className="w-4 h-4" />{activity.date}</div> <h3 className="text-xl font-bold text-on-surface mb-3 group-hover:text-primary transition-colors cursor-pointer" onClick={() => setSelectedActivity(activity)}>{activity.title}</h3> <p className="text-on-surface-variant text-sm leading-relaxed mb-6 line-clamp-3">{activity.description}</p> <div className="flex items-center justify-between gap-3"> <button type="button" onClick={(e) => handleLike(activity.id, e)} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${ hasUserLiked(activity.id) ? 'bg-red-500/20 text-red-400' : 'bg-black/5 dark:bg-white/5 text-on-surface-variant hover:bg-red-500/10 hover:text-red-400' }`} > <Icon name="heart" className={`w-4 h-4 ${hasUserLiked(activity.id) ? 'fill-current' : ''}`} /> <span>{getTotalLikes(activity.id) || activity.likes || 0}</span> </button> <div className="w-full py-3 rounded-lg border border-primary/30 text-primary font-semibold glass-panel-elevated group-hover:bg-primary/20 transition-all duration-300 flex items-center justify-center gap-2"> <Icon name="eye" className="w-4 h-4" />Lihat Detail </div> </div> </div>
+                                    <div className="p-8"> <div className="flex items-center gap-2 text-primary text-sm font-medium mb-3"><Icon name="calendar" className="w-4 h-4" />{activity.date}</div> <h3 className="text-xl font-bold text-on-surface mb-3 group-hover:text-primary transition-colors cursor-pointer">{activity.title}</h3> <p className="text-on-surface-variant text-sm leading-relaxed mb-6 line-clamp-3">{activity.description}</p> <div className="flex items-center justify-between gap-3"> <button type="button" onClick={(e) => handleLike(activity.id, e)} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${ hasUserLiked(activity.id) ? 'bg-red-500/20 text-red-400' : 'bg-black/5 dark:bg-white/5 text-on-surface-variant hover:bg-red-500/10 hover:text-red-400' }`} > <Icon name="heart" className={`w-4 h-4 ${hasUserLiked(activity.id) ? 'fill-current' : ''}`} /> <span>{getTotalLikes(activity.id) || activity.likes || 0}</span> </button> <div className="w-full py-3 rounded-lg border border-primary/30 text-primary font-semibold glass-panel-elevated group-hover:bg-primary/20 transition-all duration-300 flex items-center justify-center gap-2"> <Icon name="eye" className="w-4 h-4" />Lihat Detail </div> </div> </div>
                                 </div>
                             ))}
                         </div>
@@ -1000,14 +1075,13 @@
                         <div className="flex items-center gap-3 mb-10"> <Icon name="history" className="text-on-surface-variant w-8 h-8" /> <h2 className="text-3xl font-bold tracking-tight text-on-surface">{WEBSITE_CONTENT.archive.pastTitle}</h2> </div>
                         <div className="grid grid-cols-1 md:grid-cols-4 md:grid-rows-2 gap-6">
                             {PAST_COLLECTIONS.map((item, idx) => (
-                                <div key={item.id} onClick={() => setSelectedActivity({ ...item, status: 'Arsip', location: 'N/A' })} className={`glass-panel rounded-xl overflow-hidden group relative min-h-[300px] cursor-pointer ${idx === 0 ? "md:col-span-2 md:row-span-2" : idx === 1 ? "md:col-span-2 md:row-span-1" : "md:col-span-1 md:row-span-1"}`}>
+                                <div key={item.id} onClick={() => onNavigate('activity', { ...item, status: 'Arsip', location: 'N/A' })} className={`glass-panel rounded-xl overflow-hidden group relative min-h-[300px] cursor-pointer ${idx === 0 ? "md:col-span-2 md:row-span-2" : idx === 1 ? "md:col-span-2 md:row-span-1" : "md:col-span-1 md:row-span-1"}`}>
                                     <img src={getImageUrl(item)} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" referrerPolicy="no-referrer" /> <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
                                     <div className="absolute bottom-0 left-0 p-8 w-full"> <div className="text-primary text-xs font-bold mb-2 tracking-[0.2em] uppercase">{item.category}</div> <h3 className="text-2xl font-bold mb-3 text-white">{item.title}</h3> <p className="text-slate-200 text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-500 mb-4">{item.description}</p> <button type="button" onClick={(e) => handleLike(item.id, e)} className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${ hasUserLiked(item.id) ? 'bg-red-500/20 text-red-400' : 'bg-white/10 text-white hover:bg-red-500/20 hover:text-red-400' }`} > <Icon name="heart" className={`w-4 h-4 ${hasUserLiked(item.id) ? 'fill-current' : ''}`} /> <span>{getTotalLikes(item.id) || item.likes || 0}</span> </button> </div>
                                 </div>
                             ))}
                         </div>
                     </section>
-                    <ActivityModal activity={selectedActivity} onClose={() => setSelectedActivity(null)} auth={auth} />
                 </div>
             );
         };
@@ -1133,11 +1207,19 @@
 
         function App() {
             const [activeTab, setActiveTab] = useState('home');
+            const [selectedActivity, setSelectedActivity] = useState(null);
             const [isLightMode, setIsLightMode] = useState(() => localStorage.getItem('paskanessTheme') === 'light');
             const [showAuthModal, setShowAuthModal] = useState(false);
             
             // Mengambil fungsi auth (Login & Database Bergilir)
             const auth = useAuth();
+
+            const handleNavigate = (tab, activity = null) => {
+                setActiveTab(tab);
+                if (activity !== undefined) {
+                    setSelectedActivity(activity);
+                }
+            };
 
             useEffect(() => {
                 const listener = () => setShowAuthModal(true);
@@ -1156,17 +1238,18 @@
 
             return (
                 <div className="min-h-screen flex flex-col relative z-0">
-                    <Background3DObjects />
+                    {activeTab !== 'activity' && <Background3DObjects />}
                     
                     {/* Mengirimkan data profil pengguna ke Navbar agar muncul di pojok kiri atas */}
-                    <Navbar activeTab={activeTab} setActiveTab={setActiveTab} isLightMode={isLightMode} toggleTheme={toggleTheme} auth={auth} />
+                    <Navbar activeTab={activeTab} setActiveTab={handleNavigate} isLightMode={isLightMode} toggleTheme={toggleTheme} auth={auth} />
                     
                     <main className="flex-grow">
                         {/* Mengirimkan Auth ke halaman-halaman yang butuh fitur Komentar (Modal) */}
-                        {activeTab === 'home' && <HomePage onNavigate={setActiveTab} auth={auth} />}
-                        {activeTab === 'archive' && <ArchivePage auth={auth} />}
+                        {activeTab === 'home' && <HomePage onNavigate={handleNavigate} auth={auth} />}
+                        {activeTab === 'archive' && <ArchivePage onNavigate={handleNavigate} auth={auth} />}
                         {activeTab === 'structure' && <StructurePage />}
-                        {activeTab === 'account' && <AccountPage auth={auth} onNavigate={setActiveTab} />}
+                        {activeTab === 'account' && <AccountPage auth={auth} onNavigate={handleNavigate} />}
+                        {activeTab === 'activity' && <ActivityPage activity={selectedActivity} onBack={() => handleNavigate('archive')} onNavigate={handleNavigate} auth={auth} />}
                     </main>
                     <Footer />
 
