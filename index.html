@@ -472,13 +472,11 @@
         };
 
         // ===== 2. SISTEM LIKE & KOMENTAR (DI DATABASE UTAMA) =====
-        const useLikes = () => {
-            const [userLikes, setUserLikes] = useState(() => {
-                const saved = localStorage.getItem('paskanessUserLikes');
-                return saved ? new Set(JSON.parse(saved)) : new Set();
-            });
+        const useLikes = (auth) => {
+            const [userLikes, setUserLikes] = useState(new Set());
             const [totalLikes, setTotalLikes] = useState({});
 
+            // Mengambil Total Likes setiap postingan
             useEffect(() => {
                 if (window.dbLikeKomen) {
                     const likesRef = window.dbLikeKomen.ref('likes');
@@ -499,39 +497,61 @@
                 }
             }, []);
 
+            // Mengambil status Like khusus user yang sedang login
+            useEffect(() => {
+                if (auth && auth.user && window.dbLikeKomen) {
+                    const userLikesRef = window.dbLikeKomen.ref(`user_likes/${auth.user.uid}`);
+                    userLikesRef.on('value', (snapshot) => {
+                        if (snapshot.exists()) {
+                            setUserLikes(new Set(Object.keys(snapshot.val()).filter(k => snapshot.val()[k])));
+                        } else {
+                            setUserLikes(new Set());
+                        }
+                    });
+                    return () => userLikesRef.off();
+                } else {
+                    setUserLikes(new Set()); // Reset jika tidak login
+                }
+            }, [auth?.user]);
+
             const handleLike = useCallback(async (activityId, e) => {
                 if(e) e.stopPropagation();
                 
-                const newUserLikes = new Set(userLikes);
-                let isLiking = false;
-
-                if (newUserLikes.has(activityId)) {
-                    newUserLikes.delete(activityId);
-                    isLiking = false;
-                } else {
-                    newUserLikes.add(activityId);
-                    isLiking = true;
+                if (!auth || !auth.user) {
+                    alert("Silakan Login terlebih dahulu untuk memberikan Like!");
+                    window.dispatchEvent(new CustomEvent('openAuthModal'));
+                    return;
                 }
 
+                const isLiking = !userLikes.has(activityId);
+
+                // Update UI cepat (Optimistic Update)
+                const newUserLikes = new Set(userLikes);
+                if (isLiking) newUserLikes.add(activityId);
+                else newUserLikes.delete(activityId);
                 setUserLikes(newUserLikes);
-                localStorage.setItem('paskanessUserLikes', JSON.stringify(Array.from(newUserLikes)));
 
                 if (window.dbLikeKomen) {
                     const postRef = window.dbLikeKomen.ref('likes/post_' + activityId);
+                    const userLikeRef = window.dbLikeKomen.ref(`user_likes/${auth.user.uid}/${activityId}`);
+                    
                     try {
-                        const snap = await postRef.once('value');
-                        if (snap.exists()) {
-                            const currentLikes = snap.val().jumlahLike || 0;
-                            const newLikeCount = isLiking ? currentLikes + 1 : Math.max(0, currentLikes - 1);
-                            await postRef.update({ jumlahLike: newLikeCount });
-                        } else if (isLiking) {
-                            await postRef.set({ jumlahLike: 1 });
+                        if (isLiking) {
+                            await userLikeRef.set(true);
+                        } else {
+                            await userLikeRef.remove();
                         }
+
+                        // Update Total Like dengan transaksi agar aman dan tidak bentrok
+                        await postRef.child('jumlahLike').transaction((currentLikes) => {
+                            return isLiking ? (currentLikes || 0) + 1 : Math.max(0, (currentLikes || 0) - 1);
+                        });
                     } catch (err) {
                         console.error("Firebase Like Error: ", err);
+                        setUserLikes(userLikes); // Kembalikan state jika gagal
                     }
                 }
-            }, [userLikes]);
+            }, [auth, userLikes]);
 
             const hasUserLiked = useCallback((activityId) => userLikes.has(activityId), [userLikes]);
             const getTotalLikes = useCallback((activityId) => totalLikes[activityId] || 0, [totalLikes]);
@@ -853,8 +873,8 @@
                 return () => { window.removeEventListener('scroll', handleScroll); cancelAnimationFrame(requestRef.current); };
             }, []);
 
-            const blobs = useMemo(() => Array.from({ length: window.innerWidth < 768 ? 3 : 6 }).map((_, i) => ({ id: i, left: `${Math.random() * 100}vw`, top: `${Math.random() * 100}vh`, width: `${Math.random() * 300 + 100}px`, height: `${Math.random() * 300 + 100}px`, animDuration: `${Math.random() * 15 + 10}s`, animDelay: `${Math.random() * -20}s`, color: ['#7dd3fc', '#c8a0f0', '#38bdf8', '#a855f7', '#60a5fa'][Math.floor(Math.random() * 5)] })), []);
-            const shapesData = useMemo(() => { const shapes = []; const count = window.innerWidth < 768 ? 10 : 25; for (let i = 0; i < count; i++) { shapes.push({ id: i, type: Math.random() > 0.5 ? 'cube' : 'diamond', size: Math.random() * 40 + 30, left: `${Math.random() * 90 + 5}%`, top: `${(i * (100/count)) + (Math.random() * 10)}vh`, color: ['var(--theme-primary)', 'var(--theme-tertiary)', '#38bdf8', '#a855f7', '#60a5fa'][Math.floor(Math.random() * 5)], rotX: (Math.random() - 0.5) * 3, rotY: (Math.random() - 0.5) * 3, parallaxSpeed: Math.random() * 0.5 + 0.2 }); } return shapes; }, []);
+            const blobs = useMemo(() => Array.from({ length: window.innerWidth < 768 ? 3 : 6 }).map((_, i) => ({ id: i, left: `${Math.random() * 100}vw`, top: `${Math.random() * 100}%`, width: `${Math.random() * 300 + 100}px`, height: `${Math.random() * 300 + 100}px`, animDuration: `${Math.random() * 15 + 10}s`, animDelay: `${Math.random() * -20}s`, color: ['#7dd3fc', '#c8a0f0', '#38bdf8', '#a855f7', '#60a5fa'][Math.floor(Math.random() * 5)] })), []);
+            const shapesData = useMemo(() => { const shapes = []; const count = window.innerWidth < 768 ? 10 : 25; for (let i = 0; i < count; i++) { shapes.push({ id: i, type: Math.random() > 0.5 ? 'cube' : 'diamond', size: Math.random() * 40 + 30, left: `${Math.random() * 90 + 5}%`, top: `${(i * (100/count)) + (Math.random() * 10)}%`, color: ['var(--theme-primary)', 'var(--theme-tertiary)', '#38bdf8', '#a855f7', '#60a5fa'][Math.floor(Math.random() * 5)], rotX: (Math.random() - 0.5) * 3, rotY: (Math.random() - 0.5) * 3, parallaxSpeed: Math.random() * 0.5 + 0.2 }); } return shapes; }, []);
 
             const Shape3D = React.memo(({ type, size, left, top, color, rotX, rotY, parallaxSpeed }) => (
                 <div className="absolute pointer-events-none z-[-1]" style={{ left, top }}>
@@ -957,7 +977,7 @@
         const ActivityPage = ({ activity, onBack, onNavigate, auth }) => {
             const [showComments, setShowComments] = useState(false);
             const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
-            const { handleLike, hasUserLiked, getTotalLikes } = useLikes();
+            const { handleLike, hasUserLiked, getTotalLikes } = useLikes(auth);
 
             useEffect(() => {
                 window.scrollTo(0, 0);
@@ -1064,7 +1084,7 @@
         };
 
         const HomePage = ({ onNavigate, auth }) => {
-            const { handleLike, hasUserLiked, getTotalLikes } = useLikes(); 
+            const { handleLike, hasUserLiked, getTotalLikes } = useLikes(auth); 
             return (
                 <div className="fade-in pb-12">
                     <div className="relative w-full h-64 md:h-[400px] overflow-hidden z-0 border-b border-white/5"> <div className="absolute inset-0 w-full h-full" style={{ transform: `translateY(calc(var(--scroll-y) * 0.4 * 1px))` }}> <img src={WEBSITE_CONFIG.bannerImage} alt="Banner Profile" className="absolute top-0 left-0 w-full h-[140%] object-cover object-center" style={{ transform: `translateY(-20%)` }} /> </div> <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-background"></div> </div>
@@ -1086,7 +1106,7 @@
         };
 
         const ArchivePage = ({ onNavigate, auth }) => {
-            const { handleLike, hasUserLiked, getTotalLikes } = useLikes();
+            const { handleLike, hasUserLiked, getTotalLikes } = useLikes(auth);
             return (
                 <div className="pt-32 pb-20 px-6 max-w-7xl mx-auto fade-in">
                     <header className="mb-16 text-center relative z-10"> <h1 className="text-5xl md:text-6xl font-extrabold text-on-surface tracking-tight mb-4"> {WEBSITE_CONTENT.archive.title.split(' ')[0]} <span className="text-primary">{WEBSITE_CONTENT.archive.title.split(' ')[1]}</span> </h1> <p className="text-on-surface-variant max-w-2xl mx-auto text-lg">{WEBSITE_CONTENT.archive.subtitle}</p> </header>
