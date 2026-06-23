@@ -810,23 +810,53 @@
             return <span ref={spanRef} style={{ display: 'contents' }}></span>;
         };
 
-        const Background3DObjects = () => {
+        const Background3DObjects = React.memo(() => {
             const requestRef = useRef();
             const rotationRef = useRef(0);
 
             useEffect(() => {
-                const handleScroll = () => { document.documentElement.style.setProperty('--scroll-y', window.scrollY); rotationRef.current += 1.2; };
+                let lastScrollY = window.scrollY;
+                let ticking = false;
+
+                const updateScroll = () => {
+                    document.documentElement.style.setProperty('--scroll-y', lastScrollY);
+                    rotationRef.current += 1.2;
+                    ticking = false;
+                };
+
+                const handleScroll = () => { 
+                    lastScrollY = window.scrollY;
+                    if (!ticking) {
+                        window.requestAnimationFrame(updateScroll);
+                        ticking = true;
+                    }
+                };
+                
                 window.addEventListener('scroll', handleScroll, { passive: true });
                 document.documentElement.style.setProperty('--scroll-y', window.scrollY);
-                const animate = () => { rotationRef.current += 0.25; document.documentElement.style.setProperty('--global-rot', `${rotationRef.current}deg`); requestRef.current = requestAnimationFrame(animate); };
+                
+                let lastTime = 0;
+                const fpsInterval = 1000 / 30; // Batasi animasi 30 FPS agar ringan
+                
+                const animate = (time) => { 
+                    requestRef.current = requestAnimationFrame(animate); 
+                    
+                    const elapsed = time - lastTime;
+                    if (elapsed > fpsInterval) {
+                        lastTime = time - (elapsed % fpsInterval);
+                        rotationRef.current += 0.25; 
+                        document.documentElement.style.setProperty('--global-rot', `${rotationRef.current}deg`); 
+                    }
+                };
                 requestRef.current = requestAnimationFrame(animate);
+                
                 return () => { window.removeEventListener('scroll', handleScroll); cancelAnimationFrame(requestRef.current); };
             }, []);
 
-            const blobs = useMemo(() => Array.from({ length: 6 }).map((_, i) => ({ id: i, left: `${Math.random() * 100}vw`, top: `${Math.random() * 100}vh`, width: `${Math.random() * 300 + 100}px`, height: `${Math.random() * 300 + 100}px`, animDuration: `${Math.random() * 15 + 10}s`, animDelay: `${Math.random() * -20}s`, color: ['#7dd3fc', '#c8a0f0', '#38bdf8', '#a855f7', '#60a5fa'][Math.floor(Math.random() * 5)] })), []);
-            const shapesData = useMemo(() => { const shapes = []; for (let i = 0; i < 40; i++) { shapes.push({ id: i, type: Math.random() > 0.5 ? 'cube' : 'diamond', size: Math.random() * 50 + 40, left: `${Math.random() * 90 + 5}%`, top: `${(i * 35) + (Math.random() * 20)}vh`, color: ['var(--theme-primary)', 'var(--theme-tertiary)', '#38bdf8', '#a855f7', '#60a5fa'][Math.floor(Math.random() * 5)], rotX: (Math.random() - 0.5) * 3, rotY: (Math.random() - 0.5) * 3, parallaxSpeed: Math.random() * 0.6 + 0.25 }); } return shapes; }, []);
+            const blobs = useMemo(() => Array.from({ length: window.innerWidth < 768 ? 3 : 6 }).map((_, i) => ({ id: i, left: `${Math.random() * 100}vw`, top: `${Math.random() * 100}vh`, width: `${Math.random() * 300 + 100}px`, height: `${Math.random() * 300 + 100}px`, animDuration: `${Math.random() * 15 + 10}s`, animDelay: `${Math.random() * -20}s`, color: ['#7dd3fc', '#c8a0f0', '#38bdf8', '#a855f7', '#60a5fa'][Math.floor(Math.random() * 5)] })), []);
+            const shapesData = useMemo(() => { const shapes = []; const count = window.innerWidth < 768 ? 10 : 25; for (let i = 0; i < count; i++) { shapes.push({ id: i, type: Math.random() > 0.5 ? 'cube' : 'diamond', size: Math.random() * 40 + 30, left: `${Math.random() * 90 + 5}%`, top: `${(i * (100/count)) + (Math.random() * 10)}vh`, color: ['var(--theme-primary)', 'var(--theme-tertiary)', '#38bdf8', '#a855f7', '#60a5fa'][Math.floor(Math.random() * 5)], rotX: (Math.random() - 0.5) * 3, rotY: (Math.random() - 0.5) * 3, parallaxSpeed: Math.random() * 0.5 + 0.2 }); } return shapes; }, []);
 
-            const Shape3D = ({ type, size, left, top, color, rotX, rotY, parallaxSpeed }) => (
+            const Shape3D = React.memo(({ type, size, left, top, color, rotX, rotY, parallaxSpeed }) => (
                 <div className="absolute pointer-events-none z-[-1]" style={{ left, top }}>
                     <div style={{ transform: `translateY(calc(var(--scroll-y) * ${parallaxSpeed} * 1px))` }}>
                         <div className="shape-container" style={{ width: size, height: size, perspective: '1000px', '--rot-speed-x': rotX, '--rot-speed-y': rotY, color }}>
@@ -835,7 +865,7 @@
                         </div>
                     </div>
                 </div>
-            );
+            ));
 
             return (
                 <>
@@ -843,7 +873,7 @@
                     <div className="absolute inset-0 pointer-events-none z-[-1] overflow-hidden" style={{ minHeight: '100vh' }}> {shapesData.map(shape => <Shape3D key={shape.id} {...shape} />)} </div>
                 </>
             );
-        };
+        });
 
         const Navbar = ({ activeTab, setActiveTab, isLightMode, toggleTheme, auth }) => {
             const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -1103,55 +1133,58 @@
             }
 
             return (
-                <div className="pt-32 pb-20 px-6 max-w-3xl mx-auto fade-in">
+                <div className="pt-28 pb-20 px-4 md:px-6 max-w-3xl mx-auto fade-in relative z-10">
+                    <button onClick={() => onNavigate('home')} className="mb-6 flex items-center gap-2 px-4 py-2 rounded-full glass-panel text-on-surface-variant hover:text-primary transition-colors w-fit border-white/10">
+                        <Icon name="arrow-left" className="w-5 h-5" /> Kembali
+                    </button>
                     <header className="text-center mb-10 relative z-10"> 
                         <h1 className="text-4xl md:text-5xl font-extrabold text-on-surface tracking-tight mb-4"> Akun <span className="text-primary">Saya</span> </h1> 
                     </header>
-                    <div className="glass-panel p-8 md:p-12 rounded-3xl flex flex-col items-center relative z-10 hover:shadow-[0_15px_40px_rgba(125,211,252,0.1)] transition-all duration-500">
-                        <div className="w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden border-4 border-primary/50 relative bg-background/50 flex items-center justify-center shadow-2xl mb-6 group">
+                    <div className="glass-panel p-6 md:p-12 rounded-3xl flex flex-col items-center relative z-10 hover:shadow-[0_15px_40px_rgba(125,211,252,0.1)] transition-all duration-500">
+                        <div className="w-28 h-28 md:w-40 md:h-40 rounded-full overflow-hidden border-4 border-primary/50 relative bg-background/50 flex items-center justify-center shadow-2xl mb-6 group">
                             {auth.userProfile?.photo ? (
                                 <img src={auth.userProfile.photo} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                             ) : (
-                                <Icon name="user" className="w-16 h-16 md:w-20 md:h-20 text-on-surface-variant group-hover:scale-110 transition-transform duration-500"/>
+                                <Icon name="user" className="w-12 h-12 md:w-20 md:h-20 text-on-surface-variant group-hover:scale-110 transition-transform duration-500"/>
                             )}
                         </div>
-                        <h2 className="text-3xl font-extrabold text-on-surface mb-2 tracking-tight">{auth.userProfile?.name || 'Anggota'}</h2>
-                        <p className="text-on-surface-variant text-sm md:text-base mb-10 bg-black/20 dark:bg-white/5 px-4 py-1.5 rounded-full border border-white/5">{auth.user.email}</p>
+                        <h2 className="text-2xl md:text-3xl font-extrabold text-on-surface mb-2 tracking-tight">{auth.userProfile?.name || 'Anggota'}</h2>
+                        <p className="text-on-surface-variant text-xs md:text-base mb-8 md:mb-10 bg-black/20 dark:bg-white/5 px-4 py-1.5 rounded-full border border-white/5">{auth.user.email}</p>
 
-                        <div className="w-full space-y-4">
-                            <button onClick={() => window.dispatchEvent(new CustomEvent('openAuthModal'))} className="w-full p-5 glass-panel-elevated rounded-2xl flex items-center gap-5 hover:bg-primary/10 hover:border-primary/30 transition-all duration-300 group text-left">
-                                <div className="p-3.5 bg-primary/20 rounded-xl group-hover:scale-110 group-hover:bg-primary/30 transition-all shadow-inner border border-primary/20"><Icon name="edit-3" className="w-6 h-6 text-primary" /></div>
+                        <div className="w-full space-y-3 md:space-y-4">
+                            <button onClick={() => window.dispatchEvent(new CustomEvent('openAuthModal'))} className="w-full p-4 md:p-5 glass-panel-elevated rounded-2xl flex items-center gap-4 md:gap-5 hover:bg-primary/10 hover:border-primary/30 transition-all duration-300 group text-left">
+                                <div className="p-3 md:p-3.5 bg-primary/20 rounded-xl group-hover:scale-110 group-hover:bg-primary/30 transition-all shadow-inner border border-primary/20"><Icon name="edit-3" className="w-5 h-5 md:w-6 md:h-6 text-primary" /></div>
                                 <div className="flex-1">
-                                    <h3 className="font-bold text-lg text-on-surface mb-0.5 group-hover:text-primary transition-colors">Edit Profil</h3>
-                                    <p className="text-sm text-on-surface-variant">Ubah nama dan foto profil Anda</p>
+                                    <h3 className="font-bold text-base md:text-lg text-on-surface mb-0.5 group-hover:text-primary transition-colors">Edit Profil</h3>
+                                    <p className="text-xs md:text-sm text-on-surface-variant">Ubah nama dan foto profil Anda</p>
                                 </div>
                                 <Icon name="chevron-right" className="text-on-surface-variant group-hover:text-primary transition-colors group-hover:translate-x-1" />
                             </button>
 
-                            <button className="w-full p-5 glass-panel-elevated rounded-2xl flex items-center gap-5 hover:bg-tertiary/10 hover:border-tertiary/30 transition-all duration-300 group text-left">
-                                <div className="p-3.5 bg-tertiary/20 rounded-xl group-hover:scale-110 group-hover:bg-tertiary/30 transition-all shadow-inner border border-tertiary/20"><Icon name="terminal" className="w-6 h-6 text-tertiary" /></div>
+                            <button className="w-full p-4 md:p-5 glass-panel-elevated rounded-2xl flex items-center gap-4 md:gap-5 hover:bg-tertiary/10 hover:border-tertiary/30 transition-all duration-300 group text-left">
+                                <div className="p-3 md:p-3.5 bg-tertiary/20 rounded-xl group-hover:scale-110 group-hover:bg-tertiary/30 transition-all shadow-inner border border-tertiary/20"><Icon name="terminal" className="w-5 h-5 md:w-6 md:h-6 text-tertiary" /></div>
                                 <div className="flex-1">
-                                    <h3 className="font-bold text-lg text-on-surface mb-0.5 group-hover:text-tertiary transition-colors">Pengaturan Developer</h3>
-                                    <p className="text-sm text-on-surface-variant">Konfigurasi lanjutan dan eksperimen fitur</p>
+                                    <h3 className="font-bold text-base md:text-lg text-on-surface mb-0.5 group-hover:text-tertiary transition-colors">Pengaturan Developer</h3>
+                                    <p className="text-xs md:text-sm text-on-surface-variant">Konfigurasi lanjutan dan eksperimen fitur</p>
                                 </div>
                                 <Icon name="chevron-right" className="text-on-surface-variant group-hover:text-tertiary transition-colors group-hover:translate-x-1" />
                             </button>
                             
-                            <button className="w-full p-5 glass-panel-elevated rounded-2xl flex items-center gap-5 hover:bg-blue-500/10 hover:border-blue-500/30 transition-all duration-300 group text-left">
-                                <div className="p-3.5 bg-blue-500/20 rounded-xl group-hover:scale-110 group-hover:bg-blue-500/30 transition-all shadow-inner border border-blue-500/20"><Icon name="settings" className="w-6 h-6 text-blue-400" /></div>
+                            <button className="w-full p-4 md:p-5 glass-panel-elevated rounded-2xl flex items-center gap-4 md:gap-5 hover:bg-blue-500/10 hover:border-blue-500/30 transition-all duration-300 group text-left">
+                                <div className="p-3 md:p-3.5 bg-blue-500/20 rounded-xl group-hover:scale-110 group-hover:bg-blue-500/30 transition-all shadow-inner border border-blue-500/20"><Icon name="settings" className="w-5 h-5 md:w-6 md:h-6 text-blue-400" /></div>
                                 <div className="flex-1">
-                                    <h3 className="font-bold text-lg text-on-surface mb-0.5 group-hover:text-blue-400 transition-colors">Pengaturan Lainnya</h3>
-                                    <p className="text-sm text-on-surface-variant">Privasi, notifikasi, dan preferensi akun</p>
+                                    <h3 className="font-bold text-base md:text-lg text-on-surface mb-0.5 group-hover:text-blue-400 transition-colors">Pengaturan Lainnya</h3>
+                                    <p className="text-xs md:text-sm text-on-surface-variant">Privasi, notifikasi, dan preferensi akun</p>
                                 </div>
                                 <Icon name="chevron-right" className="text-on-surface-variant group-hover:text-blue-400 transition-colors group-hover:translate-x-1" />
                             </button>
 
-                            <div className="pt-6 mt-6 border-t border-white/10">
-                                <button onClick={() => { auth.logout(); onNavigate('home'); }} className="w-full p-5 glass-panel border-red-500/30 rounded-2xl flex items-center gap-5 hover:bg-red-500/10 hover:border-red-500/50 transition-all duration-300 group text-left">
-                                    <div className="p-3.5 bg-red-500/20 rounded-xl group-hover:scale-110 group-hover:bg-red-500/30 transition-all shadow-inner border border-red-500/20"><Icon name="log-out" className="w-6 h-6 text-red-400" /></div>
+                            <div className="pt-4 md:pt-6 mt-4 md:mt-6 border-t border-white/10">
+                                <button onClick={() => { auth.logout(); onNavigate('home'); }} className="w-full p-4 md:p-5 glass-panel border-red-500/30 rounded-2xl flex items-center gap-4 md:gap-5 hover:bg-red-500/10 hover:border-red-500/50 transition-all duration-300 group text-left">
+                                    <div className="p-3 md:p-3.5 bg-red-500/20 rounded-xl group-hover:scale-110 group-hover:bg-red-500/30 transition-all shadow-inner border border-red-500/20"><Icon name="log-out" className="w-5 h-5 md:w-6 md:h-6 text-red-400" /></div>
                                     <div className="flex-1">
-                                        <h3 className="font-bold text-lg text-red-400 mb-0.5">Keluar Akun</h3>
-                                        <p className="text-sm text-red-400/70">Akhiri sesi Anda saat ini</p>
+                                        <h3 className="font-bold text-base md:text-lg text-red-400 mb-0.5">Keluar Akun</h3>
+                                        <p className="text-xs md:text-sm text-red-400/70">Akhiri sesi Anda saat ini</p>
                                     </div>
                                     <Icon name="chevron-right" className="text-red-400/50 group-hover:text-red-400 transition-colors group-hover:translate-x-1" />
                                 </button>
@@ -1238,7 +1271,7 @@
 
             return (
                 <div className="min-h-screen flex flex-col relative z-0">
-                    {activeTab !== 'activity' && <Background3DObjects />}
+                    {activeTab !== 'activity' && activeTab !== 'account' && <Background3DObjects />}
                     
                     {/* Mengirimkan data profil pengguna ke Navbar agar muncul di pojok kiri atas */}
                     <Navbar activeTab={activeTab} setActiveTab={handleNavigate} isLightMode={isLightMode} toggleTheme={toggleTheme} auth={auth} />
