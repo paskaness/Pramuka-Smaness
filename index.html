@@ -68,8 +68,6 @@
         window.dbAkun1 = appAkun1.database();
         window.dbAkun2 = appAkun2.database();
 
-        // BATAS MAKSIMAL AKUN UNTUK BERGILIR KE DB CADANGAN (Set = 2 akun untuk uji coba)
-        window.LIMIT_AKUN = 2; 
     </script>
     <script>
         tailwind.config = {
@@ -421,9 +419,13 @@
                 
                 // Jika belum ada di kedua DB (berarti pengguna baru pertama kali login Google)
                 if (!snap1.exists() && !snap2.exists()) {
-                    const snapCount = await window.dbAkun1.ref('users').once('value');
-                    const count = snapCount.exists() ? Object.keys(snapCount.val()).length : 0;
-                    const targetDB = count < window.LIMIT_AKUN ? window.dbAkun1 : window.dbAkun2;
+                    const snapCount1 = await window.dbAkun1.ref('users').once('value');
+                    const count1 = snapCount1.exists() ? Object.keys(snapCount1.val()).length : 0;
+                    
+                    const snapCount2 = await window.dbAkun2.ref('users').once('value');
+                    const count2 = snapCount2.exists() ? Object.keys(snapCount2.val()).length : 0;
+                    
+                    const targetDB = count1 <= count2 ? window.dbAkun1 : window.dbAkun2;
                     
                     // Simpan nama dan foto asli dari akun Google mereka
                     await targetDB.ref('users/' + user.uid).set({ 
@@ -437,12 +439,15 @@
             const register = async (email, password, name) => {
                 const res = await window.fbAuth.createUserWithEmailAndPassword(email, password);
                 
-                // LOGIKA SHARDING: Cek jumlah data di DB Akun 1
-                const snap = await window.dbAkun1.ref('users').once('value');
-                const count = snap.exists() ? Object.keys(snap.val()).length : 0;
+                // LOGIKA SHARDING: Cek jumlah data di DB Akun 1 dan 2
+                const snap1 = await window.dbAkun1.ref('users').once('value');
+                const count1 = snap1.exists() ? Object.keys(snap1.val()).length : 0;
                 
-                // Jika DB 1 penuh (mencapai batas), alihkan ke DB 2
-                const targetDB = count < window.LIMIT_AKUN ? window.dbAkun1 : window.dbAkun2;
+                const snap2 = await window.dbAkun2.ref('users').once('value');
+                const count2 = snap2.exists() ? Object.keys(snap2.val()).length : 0;
+                
+                // Bergantian menyimpan untuk membagi beban dan ruang penyimpanan
+                const targetDB = count1 <= count2 ? window.dbAkun1 : window.dbAkun2;
                 await targetDB.ref('users/' + res.user.uid).set({ name: name, photo: '' });
             };
             
@@ -523,17 +528,18 @@
                     return;
                 }
 
-                const isLiking = !userLikes.has(activityId);
+                const strActivityId = String(activityId);
+                const isLiking = !userLikes.has(strActivityId);
 
                 // Update UI cepat (Optimistic Update)
                 const newUserLikes = new Set(userLikes);
-                if (isLiking) newUserLikes.add(activityId);
-                else newUserLikes.delete(activityId);
+                if (isLiking) newUserLikes.add(strActivityId);
+                else newUserLikes.delete(strActivityId);
                 setUserLikes(newUserLikes);
 
                 if (window.dbLikeKomen) {
-                    const postRef = window.dbLikeKomen.ref('likes/post_' + activityId);
-                    const userLikeRef = window.dbLikeKomen.ref(`user_likes/${auth.user.uid}/${activityId}`);
+                    const postRef = window.dbLikeKomen.ref('likes/post_' + strActivityId);
+                    const userLikeRef = window.dbLikeKomen.ref(`user_likes/${auth.user.uid}/${strActivityId}`);
                     
                     try {
                         if (isLiking) {
@@ -553,8 +559,8 @@
                 }
             }, [auth, userLikes]);
 
-            const hasUserLiked = useCallback((activityId) => userLikes.has(activityId), [userLikes]);
-            const getTotalLikes = useCallback((activityId) => totalLikes[activityId] || 0, [totalLikes]);
+            const hasUserLiked = useCallback((activityId) => userLikes.has(String(activityId)), [userLikes]);
+            const getTotalLikes = useCallback((activityId) => totalLikes[String(activityId)] || 0, [totalLikes]);
 
             return { handleLike, hasUserLiked, getTotalLikes };
         };
