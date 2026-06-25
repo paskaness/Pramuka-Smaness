@@ -487,13 +487,7 @@
                     const likesRef = window.dbLikeKomen.ref('likes');
                     likesRef.on('value', (snapshot) => {
                         if (snapshot.exists()) {
-                            const data = snapshot.val();
-                            const newTotals = {};
-                            for (const key in data) {
-                                const postId = key.replace('post_', '');
-                                newTotals[postId] = data[key].jumlahLike || 0;
-                            }
-                            setTotalLikes(newTotals);
+                            setTotalLikes(snapshot.val()); // Langsung menggunakan object angka { "1": 15, "2": 0 }
                         } else {
                             setTotalLikes({});
                         }
@@ -538,18 +532,18 @@
                 setUserLikes(newUserLikes);
 
                 if (window.dbLikeKomen) {
-                    const postRef = window.dbLikeKomen.ref('likes/post_' + strActivityId);
+                    const postRef = window.dbLikeKomen.ref('likes/' + strActivityId);
                     const userLikeRef = window.dbLikeKomen.ref(`user_likes/${auth.user.uid}/${strActivityId}`);
                     
                     try {
                         if (isLiking) {
-                            await userLikeRef.set(true);
+                            await userLikeRef.set(1); // 1 lebih ringkas dari true
                         } else {
                             await userLikeRef.remove();
                         }
 
-                        // Menggunakan increment agar lebih aman dan tidak terhalang rules read (transaction)
-                        await postRef.child('jumlahLike').set(firebase.database.ServerValue.increment(isLiking ? 1 : -1));
+                        // Menggunakan increment pada node angka langsung agar super efisien
+                        await postRef.set(firebase.database.ServerValue.increment(isLiking ? 1 : -1));
                     } catch (err) {
                         console.error("Firebase Like Error: ", err);
                         alert("Gagal menyimpan Like ke Database.\n\nPastikan Rules Firebase Realtime Database diset ke true untuk .read dan .write\n\nDetail Error: " + err.message);
@@ -574,7 +568,7 @@
 
             useEffect(() => {
                 if (!activityId || !window.dbLikeKomen) return;
-                const commentsRef = window.dbLikeKomen.ref(`comments/post_${activityId}`);
+                const commentsRef = window.dbLikeKomen.ref(`comments/${activityId}`);
                 
                 commentsRef.on('value', (snapshot) => {
                     if (snapshot.exists()) {
@@ -625,8 +619,7 @@
                 if (!text.trim() || !window.dbLikeKomen) return;
                 
                 try {
-                    const commentsRef = window.dbLikeKomen.ref(`comments/post_${activityId}`);
-                    // Hanya simpan UID dan Text agar hemat penyimpanan (Tidak duplikat)
+                    const commentsRef = window.dbLikeKomen.ref(`comments/${activityId}`);
                     await commentsRef.push({
                         uid: auth.user.uid,
                         text: text.trim(),
@@ -661,7 +654,7 @@
             const handleDeleteComment = async (commentId) => {
                 if (!window.dbLikeKomen) return;
                 try {
-                    await window.dbLikeKomen.ref(`comments/post_${activityId}/${commentId}`).remove();
+                    await window.dbLikeKomen.ref(`comments/${activityId}/${commentId}`).remove();
                     setActiveCommentMenu(null);
                 } catch (err) {
                     console.error("Gagal menghapus komentar", err);
