@@ -548,13 +548,12 @@
                             await userLikeRef.remove();
                         }
 
-                        // Update Total Like dengan transaksi agar aman dan tidak bentrok
-                        await postRef.child('jumlahLike').transaction((currentLikes) => {
-                            return isLiking ? (currentLikes || 0) + 1 : Math.max(0, (currentLikes || 0) - 1);
-                        });
+                        // Menggunakan increment agar lebih aman dan tidak terhalang rules read (transaction)
+                        await postRef.child('jumlahLike').set(firebase.database.ServerValue.increment(isLiking ? 1 : -1));
                     } catch (err) {
                         console.error("Firebase Like Error: ", err);
-                        setUserLikes(userLikes); // Kembalikan state jika gagal
+                        alert("Gagal menyimpan Like ke Database.\n\nPastikan Rules Firebase Realtime Database diset ke true untuk .read dan .write\n\nDetail Error: " + err.message);
+                        setUserLikes(new Set(userLikes)); // Kembalikan state visual jika gagal
                     }
                 }
             }, [auth, userLikes]);
